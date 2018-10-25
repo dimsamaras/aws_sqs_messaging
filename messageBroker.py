@@ -1,5 +1,6 @@
 import boto3
 import time
+import random
 
 
 # Get the service resource
@@ -15,12 +16,12 @@ sqs = session.resource('sqs', region_name = region_name)
 queue = sqs.get_queue_by_name(QueueName=qName)
 
 start = time.time()
-for i in range(0,100):
+for i in range(0,200):
 
     if qName.endswith(suffix):
         response = queue.send_message(
             MessageBody='Counting: ' + str(i),
-            MessageGroupId='messageGroup1' #Create different groups
+            MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
             )
     else:
         response = queue.send_message(

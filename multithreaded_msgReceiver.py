@@ -5,7 +5,7 @@ import time
 import sys
 
 exitFlag = 0
-max_queue_messages = 10
+max_queue_messages = 1
 region_name = 'us-west-2'
 queue_name = 'schoox2TestQ.fifo'
 suffix = '.fifo'
@@ -59,7 +59,7 @@ def main(args):
     # queue2 = sqs.get_queue_by_name(QueueName=queue_name)
 
     threads = []
-    for i in range(10):
+    for i in range(4):
         t = myThread(i, 1, queue)
         threads.append(t)
         t.setName('Thread-'+str(i))
