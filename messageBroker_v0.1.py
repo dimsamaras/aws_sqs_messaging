@@ -2,25 +2,29 @@ import boto3
 import time
 import random
 
-import config #config.py confgiuration file
 
-queue_url = config.SQS_CONFIG['queue_url']
-profile_name = config.SQS_CONFIG['profile_name']
-region_name = config.SQS_CONFIG['region_name']
+# Get the service resource
+qName = 'schoox2TestQ.fifo'
+suffix = '.fifo'
+region_name = 'us-west-2'
+profile_name = 'schoox2'
 
 session = boto3.Session(profile_name = profile_name)
-queue = session.client('sqs', region_name = region_name)
+sqs = session.resource('sqs', region_name = region_name)
+# client = session.client('sqs', region_name = 'us-west-2')
+# Get the queue
+queue = sqs.get_queue_by_name(QueueName=qName)
 
 start = time.time()
 for i in range(0,200):
 
-    if queue_url.endswith('.fifo'):
-        response = queue.send_message(QueueUrl=queue_url,
+    if qName.endswith(suffix):
+        response = queue.send_message(
             MessageBody='Counting: ' + str(i),
             MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
             )
     else:
-        response = queue.send_message(QueueUrl=queue_url,
+        response = queue.send_message(
             MessageBody='Counting: ' + str(i)
             )
 

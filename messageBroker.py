@@ -2,23 +2,32 @@ import boto3
 import time
 import random
 
+import config #config.py confgiuration file
 
-# Get the service resource
-qName = 'schoox2TestQ.fifo'
-suffix = '.fifo'
-region_name = 'us-west-2'
-profile_name = 'schoox2'
+env             = 'DEV'
+queue_name      = config.SQS_CONFIG[env]['queue_name']
+endpoint_url    = config.SQS_CONFIG[env]['endpoint_url']
+profile_name    = config.SQS_CONFIG[env]['profile_name']
+region_name     = config.SQS_CONFIG[env]['region_name']
 
-session = boto3.Session(profile_name = profile_name)
-sqs = session.resource('sqs', region_name = region_name)
-# client = session.client('sqs', region_name = 'us-west-2')
-# Get the queue
-queue = sqs.get_queue_by_name(QueueName=qName)
+session_cfg = {}
+if profile_name:
+    session_cfg['profile_name'] = profile_name
+if region_name:
+    session_cfg['region_name'] = region_name
 
-start = time.time()
-for i in range(0,200):
+sqs_cfg = {}
+if endpoint_url:
+    sqs_cfg['endpoint_url'] = endpoint_url  
 
-    if qName.endswith(suffix):
+session         = boto3.Session(**session_cfg)
+sqs             = session.resource('sqs',**sqs_cfg)
+queue           = sqs.get_queue_by_name(QueueName=queue_name)
+
+start           = time.time()
+for i in range(0,5):
+
+    if queue_name.endswith('.fifo'):
         response = queue.send_message(
             MessageBody='Counting: ' + str(i),
             MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
@@ -34,6 +43,5 @@ for i in range(0,200):
     print(response.get('MD5OfMessageBody'))
 
 
-end = time.time()
-
+end             = time.time()
 print ('Time started: ' + str(start) + '  and ended: ' + str(end) + '. Total time elapsed: ' + str(end - start))

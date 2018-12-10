@@ -1,0 +1,24 @@
+"""
+Leave empty variables as is (empty), 
+replace DEV_2 sample names with your account to test on a live env.
+"""
+
+SQS_CONFIG = {'DEV':{
+	    'queue_name': 'default',
+	    'queue_url': 'http://alpine-sqs:9324/queue/default',
+	    'profile_name': '',
+	    'region_name': '',
+	    'endpoint_url': 'http://alpine-sqs:9324',
+	    'max_messages_recieved':10
+	},
+	'DEV_2':{
+	    'queue_name': 'Queue name',
+	    'queue_url': '',
+	    'profile_name': 'Profile name',
+	    'region_name': 'Prfoile region name',
+	    'endpoint_url': '',
+	    'max_messages_recieved':10
+	},
+	'PRODUCTION':{}
+	}
+
