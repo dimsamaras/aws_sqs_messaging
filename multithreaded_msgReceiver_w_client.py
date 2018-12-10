@@ -2,25 +2,15 @@ import boto3
 import threading
 import time
 
-exitFlag = 0
-max_queue_messages = 10
-region_name = 'us-west-2'
-queue_name = 'schoox2TestQ.fifo'
-suffix = '.fifo'
-profile_name = 'schoox2'
+import config #config.py confgiuration file
 
-class myThread (threading.Thread):import boto3
-import threading
-import os
-import time
-import sys
 
 exitFlag = 0
 max_queue_messages = 10
-region_name = 'us-west-2'
-queue_name = 'schoox2TestQ.fifo'
-suffix = '.fifo'
-profile_name = 'schoox2'
+queue_url = config.SQS_CONFIG['queue_url']
+profile_name = config.SQS_CONFIG['profile_name']
+region_name = config.SQS_CONFIG['region_name']
+queue_name =config.SQS_CONFIG['queue_name']
 
 class myThread (threading.Thread):
 
