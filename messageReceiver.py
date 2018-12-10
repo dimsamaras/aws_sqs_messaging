@@ -1,29 +1,35 @@
 import boto3
 import time
 
-session = boto3.Session(profile_name = 'schoox2')
+import config #config.py confgiuration file
 
-# Get the service resource
-sqs = session.resource('sqs', region_name = 'us-west-2')
-client = session.client('sqs', region_name = 'us-west-2')
-# Get the queue
-queue = sqs.get_queue_by_name(QueueName='schoox2TestQ.fifo')
+env             = 'DEV'
+max_q_messages  = config.SQS_CONFIG[env]['max_messages_received']
+queue_name      = config.SQS_CONFIG[env]['queue_name']
+endpoint_url    = config.SQS_CONFIG[env]['endpoint_url']
+profile_name    = config.SQS_CONFIG[env]['profile_name']
+region_name     = config.SQS_CONFIG[env]['region_name']
 
-start = time.time()
+session_cfg     = {}
+if profile_name:
+    session_cfg['profile_name'] = profile_name
+if region_name:
+    session_cfg['region_name'] = region_name
+
+sqs_cfg         = {}
+if endpoint_url:
+    sqs_cfg['endpoint_url'] = endpoint_url  
+
+session         = boto3.Session(**session_cfg)
+sqs             = session.resource('sqs',**sqs_cfg)
+queue           = sqs.get_queue_by_name(QueueName=queue_name)
+
 # Get messages untill finished
-all_messages=[]
-messages  = queue.receive_messages(MaxNumberOfMessages = 10):
-while len(messages)>10:
-    all_messages.extend(messages)
-    messages  = queue.receive_messages(MaxNumberOfMessages = 10):
+while true:
+    messages  = queue.receive_messages(MaxNumberOfMessages = max_q_messages)
+    for message in messages:
+	    # Process messages by printing out body
+	    print('Hello, {0}'.format(message.body))
 
-end = time.time()
-
-print ('Time started: ' + str(start) + '  and ended: ' + str(end) + '. Total time elapsed: ' + str(end - start))
-# Process messages by printing out body
-for message in all_messages:
-    # Print out the body of the message
-    print('Hello, {0}'.format(message.body))
-
-    # Let the queue know that the message is processed
-    message.delete()
+	    # Let the queue know that the message is processed
+	    message.delete()

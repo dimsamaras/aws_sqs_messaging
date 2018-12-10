@@ -33,7 +33,7 @@ class myThread (threading.Thread):
 def get_the_messages(thread, threadName, delay, resourceQueue):
     # start = time.time()
     # Get messages untill finished
-    messages  = resourceQueue.receive_messages(MaxNumberOfMessages = max_queue_messages)
+    messages  = resourceQueue.receive_messages(MaxNumberOfMessages = max_q_messages)
     # while len(messages) > 0:
     while not thread.kill_received:
         # TODO: resend msgs to queue
@@ -46,7 +46,7 @@ def get_the_messages(thread, threadName, delay, resourceQueue):
             message.delete()
 
         # time.sleep(delay)
-        messages  = resourceQueue.receive_messages(MaxNumberOfMessages = max_queue_messages)
+        messages  = resourceQueue.receive_messages(MaxNumberOfMessages = max_q_messages)
     # end = time.time()
     # print ('Time started: ' + str(start) + '  and ended: ' + str(end) + '. Total time elapsed: ' + str(end - start))
 

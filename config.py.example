@@ -9,15 +9,15 @@ SQS_CONFIG = {'DEV':{
 	    'profile_name': '',
 	    'region_name': '',
 	    'endpoint_url': 'http://alpine-sqs:9324',
-	    'max_messages_recieved':10
+	    'max_messages_received':10
 	},
 	'DEV_2':{
 	    'queue_name': 'Queue name',
 	    'queue_url': '',
-	    'profile_name': 'Profile name',
+	    'profile_name': 'Profile name',s
 	    'region_name': 'Prfoile region name',
 	    'endpoint_url': '',
-	    'max_messages_recieved':10
+	    'max_messages_received':10
 	},
 	'PRODUCTION':{}
 	}
