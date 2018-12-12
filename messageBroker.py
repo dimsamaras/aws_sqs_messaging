@@ -25,16 +25,16 @@ sqs             = session.resource('sqs',**sqs_cfg)
 queue           = sqs.get_queue_by_name(QueueName=queue_name)
 
 start           = time.time()
-for i in range(0,5):
-
+for i in range(0,20):
+    body = "/var/www/devscripts/dimsamQueueTest.php " + str(random.randint(0,3)) + " dimsam";
     if queue_name.endswith('.fifo'):
         response = queue.send_message(
-            MessageBody='Counting: ' + str(i),
+            MessageBody=body,
             MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
             )
     else:
         response = queue.send_message(
-            MessageBody='Counting: ' + str(i)
+            MessageBody=body
             )
 
     # The response is NOT a resource, but gives you a message ID and MD5
