@@ -25,7 +25,7 @@ sqs             = session.resource('sqs',**sqs_cfg)
 queue           = sqs.get_queue_by_name(QueueName=queue_name)
 
 start           = time.time()
-for i in range(0,20):
+for i in range(0,5):
     body = "/var/www/devscripts/dimsamQueueTest.php " + str(random.randint(0,3)) + " dimsam";
     if queue_name.endswith('.fifo'):
         response = queue.send_message(

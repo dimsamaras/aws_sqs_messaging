@@ -1,8 +1,9 @@
-import subprocess
+from subprocess import Popen, PIPE
 """
 Subprocess spawns new processes, but aside from stdin/stdout and whatever other APIs the other program may implement you have no means to communicate with them. Its main purpose is to launch processes that are completely separate from your own program.
 Multiprocessing also spawns new processes, but they run your code, and are designed to communicate with each other. You use it to divide tasks within your own program across multiple CPU cores.
 """
+import shlex
 import boto3
 import time
 
@@ -35,13 +36,17 @@ while True:
     for message in messages:
 	    # Process messages by printing out body
 		print('Hello, {0}'.format(message.body))
+ 		args = shlex.split(message.body)
+ 		if args[0].endswith(".php"): 
+			cmd = "php " + message.body
+			process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+			stdout, stderr = process.communicate()
+			print("stdout = " + stdout)
+			print("stderr = " + stderr)
 
-	    # if the script don't need output.
-		# subprocess.call(["php", message.body])
-
-		# if you want output
-		result = subprocess.check_output(["php", message.body], shell=True, stderr=subprocess.STDOUT)
-		print(result)
+			if (sterrd):
+				# Move to dead letter queue, with the stdError data as metadata!
+				
 
 		# Let the queue know that the message is processed
 		message.delete()
