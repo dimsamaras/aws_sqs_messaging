@@ -43,5 +43,23 @@ for i in range(0,5):
     print(response.get('MD5OfMessageBody'))
 
 
+# for i in range(0,5):
+#     body = "/var/www/devscripts/dimsamQueueTestFails.php " + str(random.randint(0,3)) + " dimsam";
+#     if queue_name.endswith('.fifo'):
+#         response = queue.send_message(
+#             MessageBody=body,
+#             MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
+#             )
+#     else:
+#         response = queue.send_message(
+#             MessageBody=body
+#             )
+
+#     # The response is NOT a resource, but gives you a message ID and MD5
+#     print(response.get('MessageId'))
+#     # print(response.get('MessageGroupId'))
+#     print(response.get('MD5OfMessageBody'))
+
+
 end             = time.time()
 print ('Time started: ' + str(start) + '  and ended: ' + str(end) + '. Total time elapsed: ' + str(end - start))
