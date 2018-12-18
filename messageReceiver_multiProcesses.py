@@ -30,6 +30,11 @@ session         = boto3.Session(**session_cfg)
 sqs             = session.resource('sqs',**sqs_cfg)
 queue           = sqs.get_queue_by_name(QueueName=queue_name)
 
+def worker(cmd):
+	passc
+
+
+
 ## Get messages until finished
 while True:
     messages = queue.receive_messages(MaxNumberOfMessages=max_q_messages)
@@ -39,8 +44,9 @@ while True:
  		if args[0].endswith(".php"): 
 			cmd = "php " + message.body
 			process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-			stdout, stderr = process.communicate()
-			
+			# while proc.returncode is None:
+   			# 	proc.poll()
+   			stdout, stderr = process.communicate()
 			if (stderr):
 				## Move to dead letter queue, with the stdError data as metadata!
 				"""
@@ -52,3 +58,5 @@ while True:
 				print("stdout = " + stdout)	
 				## Let the queue know that the message is processed
 				message.delete()
+
+			process.terminate()
