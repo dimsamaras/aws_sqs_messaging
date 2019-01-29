@@ -9,12 +9,15 @@ import time
 import json
 import config #config.py 
 
-env             = 'DEV_2'
+env             = 'DEV'
 max_q_messages  = config.SQS_CONFIG[env]['max_messages_received']
 queue_name      = config.SQS_CONFIG[env]['queue_name']
 endpoint_url    = config.SQS_CONFIG[env]['endpoint_url']
 profile_name    = config.SQS_CONFIG[env]['profile_name']
 region_name     = config.SQS_CONFIG[env]['region_name']
+
+delete_batch_max = 10 # messages
+delay_max		 = 20 # secs
 
 session_cfg     = {}
 if profile_name:
@@ -30,25 +33,57 @@ session         = boto3.Session(**session_cfg)
 sqs             = session.resource('sqs',**sqs_cfg)
 queue           = sqs.get_queue_by_name(QueueName=queue_name)
 
+def worker(cmd):
+	pass
+
 ## Get messages until finished
+delete_batch = []
+
 while True:
-    messages = queue.receive_messages(MaxNumberOfMessages=max_q_messages)
-    for message in messages:
+	start = time.time()
+	messages = queue.receive_messages(MaxNumberOfMessages=max_q_messages)
+	print('Received ' + str(len(messages)) + ' messages')
+
+	for message in messages:
 		# print('{0}, {1}, {2}'.format(message.body, message.message_id, message.receipt_handle))
- 		args = shlex.split(message.body)
- 		if args[0].endswith(".php"): 
+		args = shlex.split(message.body)
+		if args[0].endswith(".php"): 
 			cmd = "php " + message.body
 			process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+			# while proc.returncode is None:
+			# 	proc.poll()
 			stdout, stderr = process.communicate()
-			
 			if (stderr):
 				## Move to dead letter queue, with the stdError data as metadata!
 				"""
 				The message attributes of an SQS message are immutable once the message has been sent to the queue. The SQS Query API (used by all client libraries) has no support for modifying a message in the queue, other than to change its visibility timeout.
 				"""
-				receipt = message.receipt_handle
+				# receipt = message.receipt_handle
 				print('Processing error, {id}, {body}, with error: {error}'.format(body=message.body, id=message.message_id, error= stderr))
 			else:	
-				print("stdout = " + stdout)	
+				print('Processing ok, out = ' + stdout)	
 				## Let the queue know that the message is processed
-				message.delete()
+				delete_batch.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
+		else:
+			delete_batch.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
+
+		if len(delete_batch) == delete_batch_max:
+			queue.delete_messages(Entries=delete_batch)	
+
+	delay = int(delay_max - (time.time() - start))
+	time.sleep(delay)
+
+if delete_batch:
+    	queue.delete_messages(Entries=delete_batch)	
+
+
+# #!/usr/bin/env python
+# import os
+# import subprocess
+# from multiprocessing.pool import ThreadPool
+
+# def run(i):
+#     working_dir = "dir/Run/" + str(i + 1)
+#     return i, subprocess.call(os.path.join(working_dir, 'mej'), cwd=working_dir)
+
+# results = ThreadPool().map(run, range(n))		
