@@ -5,6 +5,7 @@ import time
 import json
 import config #config.py 
 import threading
+import queue
 
 exitFlag 			= 0
 env             	= 'DEV'
@@ -49,8 +50,6 @@ def process_message(thread, threadName, message, queue):
 		else:	
 			print "%s: %s" % (threadName, message.body)
 			print('Processing ok, out = ' + stdout)	
-			lock.acquire()
-
 			delete_batch.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
 			print('Messages to delete= ' + str(len(delete_batch)))
 			if len(delete_batch) == delete_batch_max:
@@ -58,10 +57,10 @@ def process_message(thread, threadName, message, queue):
 				queue.delete_messages(Entries=delete_batch)	
 				delete_batch = []
 
-			lock.release()
-
 		doRun = False
 			
+def ack_messages():
+	pass
 
 def main():
 	global threads
@@ -92,15 +91,11 @@ def main():
 					while len(threads) >= max_processes:
 						time.sleep(2)
 					t = workerThread(message.receipt_handle, message, queue)
-					# lock.acquire()
 					threads.append(t)
-					# lock.acquire()
 					t.setName(message.receipt_handle)
 					t.start()
 				else:
-					# lock.acquire()
 					delete_batch.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
-					# lock.release()
 
 			delay = int(delay_max - (time.time() - start))
 			if delay>0:
@@ -128,8 +123,8 @@ def main():
 if __name__ == '__main__':
 
 
-	args = docopt.docopt(__doc__)
-    src_queue_url = args['--src']
-    dst_queue_url = args['--dst']
-    
+ #    args = docopt.docopt(__doc__)
+ #    src_queue_url = args['--src']
+ #    dst_queue_url = args['--dst']
+
 	main()

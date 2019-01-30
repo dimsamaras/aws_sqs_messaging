@@ -6,6 +6,10 @@
 
 ## MESSAGE RECEIVERS
 * messageReceiver.py _simple sqs message receiver_
-* multithreaded_msgReceiver__v0.1.py _multithreaded implementation of the receiver_
-* multithreaded_msgReceivers.py _multithreaded implementation using resource_
-* multithreaded_msgReceiver_w_client.py _multithreaded implementation using client_
+* messageReceiver_multiProcesses_v0.1.py _multitprocessing implementation of the receiver_
+* messageReceiver_multiProcesses.py _multitprocessing implementation of the receiver. Catched keyboard interaptions_
+* messageReceiver_multiThreaded.py _multithreaded implementation using resource_
+* messageReceiver_multiThreaded_w_client.py _multithreaded implementation using client_
+
+## MESSAGE RECEIVERS v0.2
+* messageReceiver_multiThreaded_w_Processes.py _subprocesses run through threads in order to manage the messages flow_
