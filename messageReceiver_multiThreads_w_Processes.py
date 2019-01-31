@@ -67,7 +67,8 @@ def ack_messages(thread, resourceQueue, ackQueue):
 	delete_batch = []
 
 	while not thread.kill_received: # not ackQueue.empty():
-	    delete_batch.append(ackQueue.get())
+		if 
+	    delete_batch.append(ackQueue.get_nowait())
 	    ackQueue.task_done()
 
 	    if len(delete_batch) == delete_batch_max:

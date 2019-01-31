@@ -66,8 +66,9 @@ def process_message(thread):
 def ack_messages(thread):
 	delete_batch = []
 	while not thread.stopEvent.isSet():
-		delete_batch.append(thread.ackQueue.get())
-		thread.ackQueue.task_done()
+		if not thread.ackQueue.empty():
+			delete_batch.append(thread.ackQueue.get_nowait())
+			thread.ackQueue.task_done()
 		event_is_set = thread.stopEvent.wait(1)
 		if event_is_set:
 			logging.debug('stop received')
@@ -96,10 +97,10 @@ def main():
 		session_cfg['region_name']  = region_name
 	if endpoint_url:
 		sqs_cfg['endpoint_url']     = endpoint_url  
-	# session             = boto3.Session(**session_cfg)
-	# sqs                 = session.resource('sqs',**sqs_cfg)
-	# resourceQueue       = sqs.get_queue_by_name(QueueName=queue_name)
-	resourceQueue		= []
+	session             = boto3.Session(**session_cfg)
+	sqs                 = session.resource('sqs',**sqs_cfg)
+	resourceQueue       = sqs.get_queue_by_name(QueueName=queue_name)
+	# resourceQueue		= []
 	delay               = delay_max 
 	ackQueue            = Queue(maxsize=0)
 	nonPhpMessages      = []
@@ -114,28 +115,28 @@ def main():
 
 		while True:
 			start       = time.time()
-			# messages    = resourceQueue.receive_messages(MaxNumberOfMessages=max_q_messages, WaitTimeSeconds=delay_max)
+			messages    = resourceQueue.receive_messages(MaxNumberOfMessages=max_q_messages, WaitTimeSeconds=delay_max)
 
-			# # logging.debug('Received ' + str(len(messages)) + ' messages')
-			# for message in messages:
-			# 	args = shlex.split(message.body)
-			# 	if args[0].endswith(".php"): 
-			# 		logging.debug('Running Threads ' + str(threading.active_count()))
-			# 		while threading.active_count() >= max_processes + 1:
-			# 			logging.debug('Delaying for threads to get free 3 secs')
-			# 			time.sleep(3)
-			# 		t = workerThread(message.receipt_handle, message, ackQueue)
-			# 		t.daemon = True
-			# 		threads.append(t)
-			# 		t.setName('worker ' + message.receipt_handle)
-			# 		t.start()
-			# 	else:
-			# 		nonPhpMessages.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
+			# logging.debug('Received ' + str(len(messages)) + ' messages')
+			for message in messages:
+				args = shlex.split(message.body)
+				if args[0].endswith(".php"): 
+					logging.debug('Running Threads ' + str(threading.active_count()))
+					while threading.active_count() >= max_processes + 1:
+						logging.debug('Delaying for threads to get free 3 secs')
+						time.sleep(3)
+					t = workerThread(message.receipt_handle, message, ackQueue)
+					t.daemon = True
+					threads.append(t)
+					t.setName('worker ' + message.receipt_handle)
+					t.start()
+				else:
+					nonPhpMessages.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
 
-			# 		if len(nonPhpMessages) == delete_batch_max:
-			# 			logging.debug('Will delete non php messages= ' + " ".join(str(x) for x in nonPhpMessages))
-			# 			resourceQueue.delete_messages(Entries=nonPhpMessages)   
-			# 			nonPhpMessages = []     
+					if len(nonPhpMessages) == delete_batch_max:
+						logging.debug('Will delete non php messages= ' + " ".join(str(x) for x in nonPhpMessages))
+						resourceQueue.delete_messages(Entries=nonPhpMessages)   
+						nonPhpMessages = []     
 
 			delay = int(delay_max - (time.time() - start))
 			logging.debug('Delaying ' + str(delay) + ' secs')
@@ -145,11 +146,11 @@ def main():
 	except KeyboardInterrupt:
 		logging.debug("Ctrl-c received! Stop receiving...")
 		
-		# # Wait for threads to complete
-		# # Filter out threads which have been joined or are None
-		# logging.debug('Before join() on threads: threads={}'.format(threads))
-		# threads = [t.join() for t in threads if t is not None and t.isAlive()]
-		# logging.debug('After join() on threads: threads={}'.format(threads))
+		# Wait for threads to complete
+		# Filter out threads which have been joined or are None
+		logging.debug('Before join() on threads: threads={}'.format(threads))
+		threads = [t.join() for t in threads if t is not None and t.isAlive()]
+		logging.debug('After join() on threads: threads={}'.format(threads))
 
 		logging.debug('Close acknowledger thread: {}'.format(a))
 		a.stopEvent.set()
@@ -165,13 +166,12 @@ def main():
 	logging.debug('main() execution is now finished...')
 
 if __name__ == '__main__':
-
+	main()
 
  #    args = docopt.docopt(__doc__)
  #    src_queue_url = args['--src']
  #    dst_queue_url = args['--dst']
 
-	main()
 
 
 # https://www.bogotobogo.com/python/Multithread/python_multithreading_Event_Objects_between_Threads.php
