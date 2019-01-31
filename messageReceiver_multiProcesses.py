@@ -45,8 +45,11 @@ def main(args):
 				if args[0].endswith(".php"): 
 					cmd = "php " + message.body
 					process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+					# delete_batch.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
 					# while proc.returncode is None:
 					# 	proc.poll()
+
+					# communicate causes the processes to run synchronously.
 					stdout, stderr = process.communicate()
 					if (stderr):
 						## Move to dead letter queue, with the stdError data as metadata!
@@ -66,6 +69,7 @@ def main(args):
 					delete_batch = []
 
 			delay = int(delay_max - (time.time() - start))
+			# poll every at least 20''
 			time.sleep(delay)
 	except KeyboardInterrupt:
 		print("Ctrl-c received! Stop receiving...")
