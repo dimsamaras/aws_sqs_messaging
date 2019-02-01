@@ -8,7 +8,7 @@ import threading
 from Queue import Queue
 import logging
 
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO,
 					format='(%(threadName)-9s) %(message)s',)
 
 exitFlag            = 0
@@ -31,9 +31,9 @@ class workerThread(threading.Thread):
 		self.ackQueue       = ackQueue
 
 	def run(self):
-		logging.debug('Starting: %s', self.message.message_id)
+		logging.info('Starting: %s', self.message.message_id)
 		process_message(self)
-		logging.debug('Exiting: %s', self.message.message_id)
+		logging.info('Exiting: %s', self.message.message_id)
 		
 class ackThread(threading.Thread):
 
@@ -46,9 +46,9 @@ class ackThread(threading.Thread):
 		self.stopEvent  		= event
 
 	def run(self):
-		logging.debug('Starting: %s', self.name)
+		logging.info('Starting: %s', self.name)
 		ack_messages(self)
-		logging.debug('Exiting: %s', self.name)
+		logging.info('Exiting: %s', self.name)
 
 def process_message(thread):
 
@@ -56,11 +56,11 @@ def process_message(thread):
 	process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 	stdout, stderr = process.communicate()
 	if (stderr):
-		logging.debug('Processing error, {id}, {body}, with error: {error}'.format(body=thread.message.body, id=thread.message.message_id, error= stderr))
+		logging.info('Processing error, {id}, {body}, with error: {error}'.format(body=thread.message.body, id=thread.message.message_id, error= stderr))
 	else:   
-		# logging.debug( "%s: %s" % (self.getName(), message.body))
-		# logging.debug('Processing ok, out = ' + stdout)   
-		logging.debug('Processing ok')
+		# logging.info( "%s: %s" % (self.getName(), message.body))
+		# logging.info('Processing ok, out = ' + stdout)   
+		logging.info('Processing ok')
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle})
 			
 def ack_messages(thread):
@@ -71,20 +71,20 @@ def ack_messages(thread):
 			thread.ackQueue.task_done()
 		event_is_set = thread.stopEvent.wait(1)
 		if event_is_set:
-			logging.debug('stop received')
+			logging.info('stop received')
 			while not thread.ackQueue.empty():
 				delete_batch.append(thread.ackQueue.get())
 				thread.ackQueue.task_done()
 
 				if len(delete_batch) == delete_batch_max:
-					logging.debug('Will delete= ' + " ".join(str(x) for x in delete_batch))
+					logging.info('Will delete= ' + " ".join(str(x) for x in delete_batch))
 					thread.QeueuResource.delete_messages(Entries=delete_batch) 
 					delete_batch = []
 			if delete_batch:
-				logging.debug('Will delete remaining= ' + " ".join(str(x) for x in delete_batch))
+				logging.info('Will delete remaining= ' + " ".join(str(x) for x in delete_batch))
 				thread.QeueuResource.delete_messages(Entries=delete_batch)         
 		elif len(delete_batch) == delete_batch_max:
-			logging.debug('Will delete= ' + " ".join(str(x) for x in delete_batch))
+			logging.info('Will delete= ' + " ".join(str(x) for x in delete_batch))
 			thread.QeueuResource.delete_messages(Entries=delete_batch) 
 			delete_batch = []   
 
@@ -117,13 +117,13 @@ def main():
 			start       = time.time()
 			messages    = resourceQueue.receive_messages(MaxNumberOfMessages=max_q_messages, WaitTimeSeconds=delay_max)
 
-			# logging.debug('Received ' + str(len(messages)) + ' messages')
+			logging.info('Received ' + str(len(messages)) + ' messages')
 			for message in messages:
 				args = shlex.split(message.body)
 				if args[0].endswith(".php"): 
-					logging.debug('Running Threads ' + str(threading.active_count()))
+					logging.info('Running Threads ' + str(threading.active_count()))
 					while threading.active_count() >= max_processes + 1:
-						logging.debug('Delaying for threads to get free 3 secs')
+						logging.info('Delaying for threads to get free 3 secs')
 						time.sleep(3)
 					t = workerThread(message.receipt_handle, message, ackQueue)
 					t.daemon = True
@@ -134,36 +134,36 @@ def main():
 					nonPhpMessages.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
 
 					if len(nonPhpMessages) == delete_batch_max:
-						logging.debug('Will delete non php messages= ' + " ".join(str(x) for x in nonPhpMessages))
+						logging.info('Will delete non php messages= ' + " ".join(str(x) for x in nonPhpMessages))
 						resourceQueue.delete_messages(Entries=nonPhpMessages)   
 						nonPhpMessages = []     
 
 			delay = int(delay_max - (time.time() - start))
-			logging.debug('Delaying ' + str(delay) + ' secs')
+			logging.info('Delaying ' + str(delay) + ' secs')
 			if delay>0:
 				time.sleep(delay)       
 
 	except KeyboardInterrupt:
-		logging.debug("Ctrl-c received! Stop receiving...")
+		logging.info("Ctrl-c received! Stop receiving...")
 		
 		# Wait for threads to complete
 		# Filter out threads which have been joined or are None
-		logging.debug('Before join() on threads: threads={}'.format(threads))
+		logging.info('Before join() on threads: threads={}'.format(threads))
 		threads = [t.join() for t in threads if t is not None and t.isAlive()]
-		logging.debug('After join() on threads: threads={}'.format(threads))
+		logging.info('After join() on threads: threads={}'.format(threads))
 
-		logging.debug('Close acknowledger thread: {}'.format(a))
+		logging.info('Close acknowledger thread: {}'.format(a))
 		a.stopEvent.set()
 		a.join()
 
 		if nonPhpMessages:
-			logging.debug('Messages left by main' + str(len(nonPhpMessages)))
+			logging.info('Messages left by main' + str(len(nonPhpMessages)))
 			resourceQueue.delete_messages(Entries=nonPhpMessages)   
 		
 		# EMpty the rest of the queue
 
 
-	logging.debug('main() execution is now finished...')
+	logging.info('main() execution is now finished...')
 
 if __name__ == '__main__':
 	main()
