@@ -9,12 +9,16 @@ import time
 import json
 import config #config.py 
 
-env             	= 'DEV'
-max_q_messages  	= config.SQS_CONFIG[env]['max_messages_received']
-queue_name      	= config.SQS_CONFIG[env]['queue_name']
-endpoint_url    	= config.SQS_CONFIG[env]['endpoint_url']
-delete_batch_max 	= config.SQS_CONFIG['general']['delete_batch_max']
-delay_max		 	= config.SQS_CONFIG['general']['delay_max']
+env                 = 'DEV'
+max_processes       = config.SQS_CONFIG[env]['max_processes']
+max_q_messages      = config.SQS_CONFIG['general']['max_messages_received']
+queue_name          = config.SQS_CONFIG[env]['queue_name']
+endpoint_url        = config.SQS_CONFIG[env]['endpoint_url']
+profile_name        = config.SQS_CONFIG[env]['profile_name']
+region_name         = config.SQS_CONFIG[env]['region_name']
+delete_batch_max    = config.SQS_CONFIG['general']['delete_batch_max']
+delay_max           = config.SQS_CONFIG['general']['delay_max']
+
 session_cfg     	= {}
 if profile_name:
     session_cfg['profile_name'] = profile_name

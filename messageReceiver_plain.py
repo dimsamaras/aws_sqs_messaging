@@ -4,7 +4,7 @@ import time
 import config #config.py confgiuration file
 
 env             = 'DEV'
-max_q_messages  = config.SQS_CONFIG[env]['max_messages_received']
+max_q_messages  = config.SQS_CONFIG['general']['max_messages_received']
 queue_name      = config.SQS_CONFIG[env]['queue_name']
 endpoint_url    = config.SQS_CONFIG[env]['endpoint_url']
 profile_name    = config.SQS_CONFIG[env]['profile_name']
