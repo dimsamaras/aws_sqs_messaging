@@ -100,11 +100,9 @@ def main():
 	session             = boto3.Session(**session_cfg)
 	SQS_MANAGER 		= SqsManager(session, sqs_cfg)
 	SQS_MANAGER.get_queue(queue_name)
-	# resourceQueue		= []
 	delay               = delay_max 
 	ackQueue            = Queue(maxsize=0)
 	nonPhpMessages      = []
-	# threads             = []
 	stopEvent = threading.Event()
 
 	try:	
@@ -127,7 +125,6 @@ def main():
 						time.sleep(2)
 					t = workerThread(message.receipt_handle, message, ackQueue)
 					t.daemon = True
-					# threads.append(t)
 					t.setName('worker ' + message.receipt_handle)
 					t.start()
 				else:
@@ -147,13 +144,10 @@ def main():
 		logging.info("Ctrl-c received! Stop receiving...")
 		
 		# Wait for threads to complete
-		# Filter out threads which have been joined or are None
-		logging.info('Before join() on threads: threads={}'.format(threading.enumerate()))
-		main_thread = threading.current_thread()
+		logging.info('Close worker threads: {}'.format(threading.enumerate())
 		for t in threading.enumerate():
 			if t.name.startswith('worker'):
 				t.join()
-		# threads = [t.join() for t in threads if t is not None and t.isAlive()]
 		logging.info('After join() on threads: threads={}'.format(threading.enumerate()))
 
 		logging.info('Close acknowledger thread: {}'.format(a))
