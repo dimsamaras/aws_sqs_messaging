@@ -12,7 +12,7 @@ from sqs import SqsManager
 logging.basicConfig(level=logging.INFO,
 					format='(%(threadName)-9s) %(message)s',)
 
-env                 = 'DEV'
+env                 = 'DEV_3'
 max_processes       = config.SQS_CONFIG[env]['max_processes']
 max_q_messages      = config.SQS_CONFIG['general']['max_messages_received']
 queue_name          = config.SQS_CONFIG[env]['queue_name']

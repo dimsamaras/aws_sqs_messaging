@@ -2,17 +2,19 @@ from subprocess import Popen, PIPE
 import shlex
 import boto3
 import time
-import json
-import config #config.py 
+from datetime import datetime
 import threading
 from Queue import Queue
 import logging
+
+import config #config.py 
 from sqs import SqsManager
+from cloudwatch import CloudwatchManager
 
 logging.basicConfig(level=logging.INFO,
 					format='(%(threadName)-9s) %(message)s',)
 
-env                 = 'DEV'
+env                 = 'DEV_3'
 max_processes       = config.SQS_CONFIG[env]['max_processes']
 max_q_messages      = config.SQS_CONFIG['general']['max_messages_received']
 queue_name          = config.SQS_CONFIG[env]['queue_name']
@@ -37,10 +39,11 @@ class workerThread(threading.Thread):
 		
 class ackThread(threading.Thread):
 
-	def __init__(self, threadID, SQS_MANAGER, ackQueue, event):
+	def __init__(self, threadID, SQS_MANAGER, CW_MANAGER, ackQueue, event):
 		threading.Thread.__init__(self)
 		self.threadID   		= threadID
 		self.SqsManager   	    = SQS_MANAGER
+		self.CWManager          = CW_MANAGER
 		self.ackQueue   		= ackQueue
 		# A flag to notify the thread that it should finish up and exit
 		self.stopEvent  		= event
@@ -75,15 +78,34 @@ def ack_messages(thread):
 
 				if len(delete_batch) == delete_batch_max:
 					logging.info('Will delete on stop = ' + " ".join(str(x) for x in delete_batch))
-					delete_batch = send_ack(thread.SqsManager, delete_batch)
+					delete_batch = send_ack(thread.SqsManager, thread.CWManager, delete_batch)
 			if delete_batch:
 				logging.info('Will delete on stop final remaining = ' + " ".join(str(x) for x in delete_batch))
-				delete_batch = send_ack(thread.SqsManager, delete_batch)
+				delete_batch = send_ack(thread.SqsManager, thread.CWManager, delete_batch)
 		elif len(delete_batch) == delete_batch_max:
 			logging.info('Will delete = ' + " ".join(str(x) for x in delete_batch))
-			delete_batch = send_ack(thread.SqsManager, delete_batch)
+			delete_batch = send_ack(thread.SqsManager, thread.CWManager, delete_batch)
 
-def send_ack(SqsManager, messages):
+def send_ack(SqsManager, CWManager, messages):
+	CWManager.put_metric_data('Schoox', [
+									        {
+									            'MetricName': 'ExecutionTime',
+									            'Dimensions': [
+									                {
+									                    'Name': 'AutoScalingGroup',
+									                    'Value': 'ProductionWorkerVPC'
+									                },
+									                {
+									                    'Name': 'QueueName',
+									                    'Value': SqsManager.get_queue_name()
+									                },
+									            ],
+									            'Timestamp'	: datetime.now(),
+									            'Unit'   	: 'Seconds',
+									            'StorageResolution' : 60,
+									            'Value': len(messages)
+									        },
+									    ])
 	SqsManager.delete_messages(messages)         
 	return []
 
@@ -100,13 +122,14 @@ def main():
 	session             = boto3.Session(**session_cfg)
 	SQS_MANAGER 		= SqsManager(session, sqs_cfg)
 	SQS_MANAGER.get_queue(queue_name)
+	CW_MANAGER			= CloudwatchManager(session)
 	delay               = delay_max 
 	ackQueue            = Queue(maxsize=0)
 	nonPhpMessages      = []
 	stopEvent = threading.Event()
 
 	try:	
-		a = ackThread('acknowledger', SQS_MANAGER, ackQueue, stopEvent)
+		a = ackThread('acknowledger', SQS_MANAGER, CW_MANAGER, ackQueue, stopEvent)
 		a.daemon = True
 		a.setName('acknowledger')
 		a.start()
@@ -144,7 +167,8 @@ def main():
 		logging.info("Ctrl-c received! Stop receiving...")
 		
 		# Wait for threads to complete
-		logging.info('Close worker threads: {}'.format(threading.enumerate())
+		# Filter out threads which have been joined or are None
+		logging.info('Before join() on threads: threads={}'.format(threading.enumerate()))
 		for t in threading.enumerate():
 			if t.name.startswith('worker'):
 				t.join()
@@ -162,7 +186,6 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
  #    args = docopt.docopt(__doc__)
  #    src_queue_url = args['--src']
  #    dst_queue_url = args['--dst']

@@ -2,9 +2,10 @@ import boto3
 import time
 import random
 
+from sqs import SqsManager
 import config  # config.py confgiuration file
 
-env = "DEV"
+env = "DEV_3"
 queue_name = config.SQS_CONFIG[env]["queue_name"]
 endpoint_url = config.SQS_CONFIG[env]["endpoint_url"]
 profile_name = config.SQS_CONFIG[env]["profile_name"]
@@ -20,21 +21,21 @@ sqs_cfg = {}
 if endpoint_url:
     sqs_cfg["endpoint_url"] = endpoint_url
 
-session = boto3.Session(**session_cfg)
-sqs = session.resource("sqs", **sqs_cfg)
-queue = sqs.get_queue_by_name(QueueName=queue_name)
+session             = boto3.Session(**session_cfg)
+SQS_MANAGER         = SqsManager(session, sqs_cfg)
+SQS_MANAGER.get_queue(queue_name)
 
 start = time.time()
 
 # for i in range(0,50):
 #     body = "/var/www/devscripts/dimsamQueueTest.php " + str(random.randint(0,5)) + " dimsam";
 #     if queue_name.endswith('.fifo'):
-#         response = queue.send_message(
+#         response = SQS_MANAGER.send_message(
 #             MessageBody=body,
 #             MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
 #             )
 #     else:
-#         response = queue.send_message(
+#         response = SQS_MANAGER.send_message(
 #             MessageBody=body
 #             )
 
@@ -63,24 +64,24 @@ for i in range(0, 10):
         messages.append({"Id": "randId_" + str(i), "MessageBody": body})
 
     if len(messages) == 10:
-        response = queue.send_messages(Entries=messages)
+        response = SQS_MANAGER.send_messages(messages)
         print(response)
         messages = []
 
 # the remaining
 if messages:
-    response = queue.send_messages(Entries=messages)
+    response = SQS_MANAGER.send_messages(messages)
     print(response)
 
 # for i in range(0,5):
 #     body = "/var/www/devscripts/dimsamQueueTestFail2.php " + str(random.randint(0,3)) + " dimsam";
 #     if queue_name.endswith('.fifo'):
-#         response = queue.send_message(
+#         response = SQS_MANAGER.send_message(
 #             MessageBody=body,
 #             MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
 #             )
 #     else:
-#         response = queue.send_message(
+#         response = SQS_MANAGER.send_message(
 #             MessageBody=body
 #             )
 
@@ -92,12 +93,12 @@ if messages:
 # for i in range(0,5):
 #     body = "/var/www/devscripts/dimsamQueueTest.py " + str(random.randint(0,3)) + " dimsam";
 #     if queue_name.endswith('.fifo'):
-#         response = queue.send_message(
+#         response = SQS_MANAGER.send_message(
 #             MessageBody=body,
 #             MessageGroupId='messageGroup'+str(random.randint(1, 4)) #Create different groups
 #             )
 #     else:
-#         response = queue.send_message(
+#         response = SQS_MANAGER.send_message(
 #             MessageBody=body
 #             )
 
