@@ -33,9 +33,7 @@ class workerThread(threading.Thread):
 		self.ackQueue       = ackQueue
 
 	def run(self):
-		logging.info('Starting: %s', self.message.message_id)
 		process_message(self)
-		logging.info('Exiting: %s', self.message.message_id)
 		
 class ackThread(threading.Thread):
 
@@ -49,9 +47,9 @@ class ackThread(threading.Thread):
 		self.stopEvent  		= event
 
 	def run(self):
-		logging.info('Starting: %s', self.name)
+		logging.info('Starting acknowledger: %s', self.name)
 		ack_messages(self)
-		logging.info('Exiting: %s', self.name)
+		logging.info('Exiting acknowledger: %s', self.name)
 
 def process_message(thread):
 	cmd = "php " + thread.message.body
@@ -60,7 +58,7 @@ def process_message(thread):
 	if (stderr):
 		logging.info('Processing error, {id}, {body}, with error: {error}'.format(body=thread.message.body, id=thread.message.message_id, error= stderr))
 	else:   
-		logging.info('Processing ok')
+		logging.info('Processing ok, {body}'.format(body=thread.message.body))
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle})
 			
 def ack_messages(thread):
@@ -71,8 +69,8 @@ def ack_messages(thread):
 			thread.ackQueue.task_done()
 		event_is_set = thread.stopEvent.wait(0.3)
 		if event_is_set:
-			logging.info('stop received')
-			while not thread.ackQueue.empty():
+			logging.info('stop received, messages in queue {messages} '.format(messages=thread.ackQueue.qsize()))
+			while not thread.ackQueue.empty() or (len(delete_batch) > delete_batch_max) :
 				delete_batch.append(thread.ackQueue.get_nowait())
 				thread.ackQueue.task_done()
 

@@ -45,10 +45,10 @@ start = time.time()
 #     print(response.get('MD5OfMessageBody'))
 
 messages = []
-for i in range(0, 10):
+for i in range(0, 100):
     body = (
         "/var/www/devscripts/dimsamQueueTest.php "
-        + str(random.randint(0, 5))
+        + str(random.randint(0, 10))
         + " dimsam"
     )
     if queue_name.endswith(".fifo"):
