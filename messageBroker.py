@@ -5,7 +5,7 @@ import random
 from sqs import SqsManager
 import config  # config.py confgiuration file
 
-env = "DEV_3"
+env = "DEV_2"
 queue_name = config.SQS_CONFIG[env]["queue_name"]
 endpoint_url = config.SQS_CONFIG[env]["endpoint_url"]
 profile_name = config.SQS_CONFIG[env]["profile_name"]
