@@ -10,12 +10,12 @@ import threading
 from Queue import Queue
 import click
 # custom dependencies
-import config
-import logger
-from sqs import SqsManager
-from cloudwatch import CloudwatchManager
-from worker.worker import workerThread
-from acknowledger.acknowledger import ackThread
+import sqsrunner.config as config
+import sqsrunner.logger as logger
+from sqsrunner.sqs import SqsManager
+from sqsrunner.cloudwatch import CloudwatchManager
+from sqsrunner.worker.worker import workerThread
+from sqsrunner.acknowledger.acknowledger import ackThread
 
 # global variables
 SQS_MANAGER = None

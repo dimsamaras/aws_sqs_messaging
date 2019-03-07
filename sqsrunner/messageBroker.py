@@ -2,8 +2,8 @@ import boto3
 import time
 import random
 import click
-from sqs import SqsManager
-import config  # config.py confgiuration file
+from sqsrunner.sqs import SqsManager
+import sqsrunner.config as config # config.py configuration file
 
 # global variables
 SQS_MANAGER = None
