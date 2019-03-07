@@ -2,8 +2,9 @@ import boto3
 import time
 import random
 import click
+import config
+import json
 from sqsrunner.sqs import SqsManager
-import sqsrunner.config as config # config.py configuration file
 
 # global variables
 SQS_MANAGER = None
@@ -13,14 +14,22 @@ PROFILE = None
 REGION_NAME = None
 
 @click.group()
+@click.option('--config', default=None, help="The config file")
 @click.option('--env', default='DEV_3', help="Use an enviroment profile for the worker to run, DEV, DEV_2, DEV_3, DEV_4")
-def cli(env):
+def cli(config, env):
     global SQS_MANAGER, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME
 
-    QUEUE               = config.SQS_CONFIG[env]['queue_name']
-    QUEUE_ENDPOINT      = config.SQS_CONFIG[env]['endpoint_url']
-    PROFILE             = config.SQS_CONFIG[env]['profile_name']
-    REGION_NAME         = config.SQS_CONFIG[env]['region_name']
+    if config:
+        with open(config) as f:
+            config = json.load(f)
+    else:
+        with open('sqsrunner/config.json') as f:
+            config = json.load(f)
+
+    QUEUE               = config['config'][env]['queue_name']
+    QUEUE_ENDPOINT      = config['config'][env]['endpoint_url']
+    PROFILE             = config['config'][env]['profile_name']
+    REGION_NAME         = config['config'][env]['region_name']
 
     session_cfg         = {}
     sqs_cfg             = {}

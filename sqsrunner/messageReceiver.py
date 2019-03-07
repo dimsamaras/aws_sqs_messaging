@@ -10,7 +10,6 @@ import threading
 from Queue import Queue
 import click
 # custom dependencies
-import sqsrunner.config as config
 import sqsrunner.logger as logger
 from sqsrunner.sqs import SqsManager
 from sqsrunner.cloudwatch import CloudwatchManager
@@ -31,21 +30,29 @@ CW_BATCH_MAX = None
 DELAY_MAX = None
 
 @click.group()
+@click.option('--config', default='', help="The config file")
 @click.option('--env', default='DEV_3', help="Use an enviroment profile for the worker to run, DEV, DEV_2, DEV_3, DEV_4")
-def cli(env):
+def cli(config, env):
 	"""Worker consumes sqs messages"""
 
 	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX
 
-	MAX_PROCESSES       = config.SQS_CONFIG[env]['max_processes']
-	MAX_Q_MESSAGES      = config.SQS_CONFIG['general']['max_messages_received']
-	QUEUE          		= config.SQS_CONFIG[env]['queue_name']
-	QUEUE_ENDPOINT      = config.SQS_CONFIG[env]['endpoint_url']
-	PROFILE       		= config.SQS_CONFIG[env]['profile_name']
-	REGION_NAME         = config.SQS_CONFIG[env]['region_name']
-	DELETE_BATCH_MAX    = config.SQS_CONFIG['general']['delete_batch_max']
-	CW_BATCH_MAX		= config.SQS_CONFIG['general']['cloudwatch_metric_limit']
-	DELAY_MAX           = config.SQS_CONFIG['general']['delay_max']
+    if config:
+        with open(config) as f:
+            config = json.load(f)
+    else:
+        with open('sqsrunner.config.json') as f:
+            config = json.load(f)
+
+	MAX_PROCESSES       = config['config'][env]['max_processes']
+	MAX_Q_MESSAGES      = config['config']['general']['max_messages_received']
+	QUEUE          		= config['config'][env]['queue_name']
+	QUEUE_ENDPOINT      = config['config'][env]['endpoint_url']
+	PROFILE       		= config['config'][env]['profile_name']
+	REGION_NAME         = config['config'][env]['region_name']
+	DELETE_BATCH_MAX    = config['config']['general']['delete_batch_max']
+	CW_BATCH_MAX		= config['config']['general']['cloudwatch_metric_limit']
+	DELAY_MAX           = config['config']['general']['delay_max']
 
 	session_cfg         = {}
 	sqs_cfg             = {}
