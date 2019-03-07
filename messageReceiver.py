@@ -35,7 +35,6 @@ DELAY_MAX = None
 def cli(env):
 	"""Worker consumes sqs messages"""
 
-	print env
 	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX
 
 	MAX_PROCESSES       = config.SQS_CONFIG[env]['max_processes']
@@ -123,8 +122,7 @@ def work():
 	logger.logging.info('main() execution is now finished...')
 
 @cli.command('info')
-@click.argument('env')
-def info(env):	
+def info():	
 	"""Worker congi enviroment info"""
 
 	global MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX

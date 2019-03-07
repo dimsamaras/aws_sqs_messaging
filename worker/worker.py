@@ -24,6 +24,7 @@ def process_message(thread):
 	timeDelta = time.time() - timeStarted
 	if (stderr):
 		logger.logging.info('Processing error, {id}, {body}, with error: {error}'.format(body=thread.message.body, id=thread.message.message_id, error= stderr))
+		# send this command to the dlq
 	else:   
 		logger.logging.info('Processing ok, {body}'.format(body=thread.message.body))
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle, 'ProcTime': timeDelta})

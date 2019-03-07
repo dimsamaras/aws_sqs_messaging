@@ -43,24 +43,24 @@ def ack_messages(thread):
 					# logger.logging.info('Will delete on stop = ' + " ".join(str(x) for x in delete_batch))
 					delete_batch, metrics, timer = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max)
 					delete_batch = send_ack(thread.SqsManager, delete_batch)					
-			if delete_batch:
-				# logger.logging.info('Will delete on stop final remaining = ' + " ".join(str(x) for x in delete_batch))
-				delete_batch, metrics, timer = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max, True)
-				delete_batch = send_ack(thread.SqsManager, delete_batch)
+
+			logger.logging.info('Will delete on stop final remaining = ' + " ".join(str(x) for x in delete_batch))
+			delete_batch, metrics, timer = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max, True)
+			delete_batch = send_ack(thread.SqsManager, delete_batch)
 		elif len(delete_batch) == thread.delete_batch_max:
-			# logger.logging.info('Will delete = ' + " ".join(str(x) for x in delete_batch))
+			logger.logging.info('Batch delete = ' + " ".join(str(x) for x in delete_batch))
 			delete_batch, metrics, timer  = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max)
 			delete_batch = send_ack(thread.SqsManager, delete_batch)
 
 def send_ack(SqsManager, messages):
 	"""Send message acknowledgement  in batches."""
-
-	SqsManager.delete_messages(messages) 
+	if messages:
+		SqsManager.delete_messages(messages) 
 
 	return []
 
 def send_metrics(CWManager, SqsManager, metrics):
-	logger.logging.info('Calculated metrics =' + str(metrics))
+	logger.logging.info('Metrics to send = ' + str(metrics))
 
 	CWManager.put_metric_data('Schoox', [
 											{
@@ -91,7 +91,7 @@ def calculate_metrics(metrics, messages, timer, CWManager, SqsManager, metrics_b
 	"""Calculate message processing metrics"""
 
 	for msg in messages:
-		entryExec = int(msg['ProcTime'])
+		entryExec = msg['ProcTime']
 		try:
 			del msg['ProcTime']
 		except KeyError:
@@ -102,7 +102,10 @@ def calculate_metrics(metrics, messages, timer, CWManager, SqsManager, metrics_b
 		metrics['sum'] += entryExec
 	
 	elapsed = datetime.now() - timer
-	if (elapsed > timedelta(minutes=1)) and (metrics['count']>0):
+
+	logger.logging.info('Calculated metrics = ' + str(metrics))
+
+	if (elapsed > timedelta(minutes=1)) and (metrics['count'] > 0):
 		send_metrics(CWManager, SqsManager, metrics)
 		metrics = reset_metrics_dict()
 
