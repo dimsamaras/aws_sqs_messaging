@@ -1,5 +1,5 @@
 {
-	"config": {
+	"env": {
 		"DEV": {
 			"instructions": "use when running on alpine-sqs from within the container",
 			"queue_name": "default",
@@ -33,14 +33,15 @@
 			"profile_name": "",
 			"region_name": "",
 			"endpoint_url": "http://localhost:4576",
-			"max_processes": 10
+			"max_processes": 4
 		},
-		"PRODUCTION": {},
-		"general": {
-			"max_messages_received": 10,
-			"delete_batch_max": 10,
-			"delay_max": 20,
-			"cloudwatch_metric_limit": 100
-		}
+		"PRODUCTION": {}
+		},
+	"worker": {
+		"max_messages_received": 10,
+		"delete_batch_max": 10,
+		"delay_max": 20,
+		"cloudwatch_metric_limit": 100
 	}
+	
 }

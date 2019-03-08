@@ -5,6 +5,7 @@ import click
 import config
 import json
 from sqsrunner.sqs import SqsManager
+import sqsrunner.logger as logger
 
 # global variables
 SQS_MANAGER = None
@@ -14,22 +15,18 @@ PROFILE = None
 REGION_NAME = None
 
 @click.group()
-@click.option('--config', default=None, help="The config file")
-@click.option('--env', default='DEV_3', help="Use an enviroment profile for the worker to run, DEV, DEV_2, DEV_3, DEV_4")
+@click.option('--config', required=True, type=click.Path(exists=True), help="The configuration file")
+@click.option('--env', required=True, help="Use an enviroment profile for the worker to run, e.g DEV, for the DEV object to be used")
 def cli(config, env):
     global SQS_MANAGER, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME
 
-    if config:
-        with open(config) as f:
-            config = json.load(f)
-    else:
-        with open('sqsrunner/config.json') as f:
-            config = json.load(f)
+    with open(config) as f:
+        config = json.load(f)
 
-    QUEUE               = config['config'][env]['queue_name']
-    QUEUE_ENDPOINT      = config['config'][env]['endpoint_url']
-    PROFILE             = config['config'][env]['profile_name']
-    REGION_NAME         = config['config'][env]['region_name']
+    QUEUE               = config['env'][env]['queue_name']
+    QUEUE_ENDPOINT      = config['env'][env]['endpoint_url']
+    PROFILE             = config['env'][env]['profile_name']
+    REGION_NAME         = config['env'][env]['region_name']
 
     session_cfg         = {}
     sqs_cfg             = {}
@@ -148,7 +145,7 @@ def info():
 
     global QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME
 
-    logger.logging.info('Enviroment: {env} setup:{setup}'.format(env=env, setup=[{
+    logger.logging.info('Enviroment setup:{setup}'.format(setup=[{
         'queue name': QUEUE,
         'queue endopoint url': QUEUE_ENDPOINT,
         'aws profile name': PROFILE,

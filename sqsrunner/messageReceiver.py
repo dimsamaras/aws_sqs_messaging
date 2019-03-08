@@ -9,12 +9,16 @@ import time
 import threading
 from Queue import Queue
 import click
+import json
+import signal
 # custom dependencies
 import sqsrunner.logger as logger
 from sqsrunner.sqs import SqsManager
 from sqsrunner.cloudwatch import CloudwatchManager
 from sqsrunner.worker.worker import workerThread
 from sqsrunner.acknowledger.acknowledger import ackThread
+from sqsrunner.worker.gracefulkiller import GracefulKiller
+
 
 # global variables
 SQS_MANAGER = None
@@ -30,29 +34,25 @@ CW_BATCH_MAX = None
 DELAY_MAX = None
 
 @click.group()
-@click.option('--config', default='', help="The config file")
-@click.option('--env', default='DEV_3', help="Use an enviroment profile for the worker to run, DEV, DEV_2, DEV_3, DEV_4")
+@click.option('--config', required=True,  type=click.Path(exists=True), help="The configu file")
+@click.option('--env', required=True, help="Use an enviroment profile for the worker to run, e.g DEV, for the DEV object to be used")
 def cli(config, env):
 	"""Worker consumes sqs messages"""
 
-	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX
+	global  SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX
 
-    if config:
-        with open(config) as f:
-            config = json.load(f)
-    else:
-        with open('sqsrunner.config.json') as f:
-            config = json.load(f)
+	with open(config) as f:
+		config = json.load(f)
 
-	MAX_PROCESSES       = config['config'][env]['max_processes']
-	MAX_Q_MESSAGES      = config['config']['general']['max_messages_received']
-	QUEUE          		= config['config'][env]['queue_name']
-	QUEUE_ENDPOINT      = config['config'][env]['endpoint_url']
-	PROFILE       		= config['config'][env]['profile_name']
-	REGION_NAME         = config['config'][env]['region_name']
-	DELETE_BATCH_MAX    = config['config']['general']['delete_batch_max']
-	CW_BATCH_MAX		= config['config']['general']['cloudwatch_metric_limit']
-	DELAY_MAX           = config['config']['general']['delay_max']
+	MAX_PROCESSES       = config['env'][env]['max_processes']
+	MAX_Q_MESSAGES      = config['worker']['max_messages_received']
+	QUEUE          		= config['env'][env]['queue_name']
+	QUEUE_ENDPOINT      = config['env'][env]['endpoint_url']
+	PROFILE       		= config['env'][env]['profile_name']
+	REGION_NAME         = config['env'][env]['region_name']
+	DELETE_BATCH_MAX    = config['worker']['delete_batch_max']
+	CW_BATCH_MAX		= config['worker']['cloudwatch_metric_limit']
+	DELAY_MAX           = config['worker']['delay_max']
 
 	session_cfg         = {}
 	sqs_cfg             = {}
@@ -73,60 +73,43 @@ def work():
 	"""Worker execution logic"""
 	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX
 
+	sighandler = GracefulKiller()
 	ackQueue = Queue(maxsize=0)
 	nonPhpMessages = []
 	stopEvent = threading.Event()
 
-	try:	
-		a = ackThread('acknowledger', SQS_MANAGER, CW_MANAGER, DELETE_BATCH_MAX,CW_BATCH_MAX, ackQueue, stopEvent)
-		a.daemon = True
-		a.setName('acknowledger')
-		a.start()
+	a = ackThread('acknowledger', SQS_MANAGER, CW_MANAGER, DELETE_BATCH_MAX,CW_BATCH_MAX, ackQueue, stopEvent)
+	a.daemon = True
+	a.setName('acknowledger')
+	a.start()
 
-		while True:
-			start       = time.time()
-			messages    = SQS_MANAGER.receive_messages(MAX_Q_MESSAGES, DELAY_MAX)
+	while True:
+		if sighandler.receivedTermSignal:
+			logger.logging.warning("Gracefully exiting due to receipt of signal {}".format(sighandler.lastSignal))
+			signal_term_handler(nonPhpMessages)
 
-			logger.logging.info('Received ' + str(len(messages)) + ' messages')
-			for message in messages:
-				args = shlex.split(message.body)
-				if args[0].endswith(".php"): 
-					logger.logging.info('Running Threads ' + str(threading.active_count()))
-					while threading.active_count() >= MAX_PROCESSES + 1:
-						logger.logging.info('Delaying for threads to get free 3 secs')
-						time.sleep(2)
-					t = workerThread(message.receipt_handle, message, ackQueue)
-					t.daemon = True
-					t.setName('worker ' + message.receipt_handle)
-					t.start()
-				else:
-					nonPhpMessages.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
+		start       = time.time()
+		messages    = SQS_MANAGER.receive_messages(MAX_Q_MESSAGES, DELAY_MAX)
 
-					if len(nonPhpMessages) == DELETE_BATCH_MAX:
-						logger.logger.logging.info('Will delete non php messages= ' + " ".join(str(x) for x in nonPhpMessages))
-						SQS_MANAGER.delete_messages(nonPhpMessages)   
-						nonPhpMessages = []     
+		logger.logging.info('Received ' + str(len(messages)) + ' messages')
+		for message in messages:
+			args = shlex.split(message.body)
+			if args[0].endswith(".php"): 
+				logger.logging.info('Running Threads ' + str(threading.active_count()))
+				while threading.active_count() >= MAX_PROCESSES + 1:
+					logger.logging.info('Delaying for threads to get free 3 secs')
+					time.sleep(3)
+				t = workerThread(message.receipt_handle, message, ackQueue)
+				t.daemon = True
+				t.setName('worker ' + message.receipt_handle)
+				t.start()
+			else:
+				nonPhpMessages.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
 
-	except KeyboardInterrupt:
-		logger.logging.info("Ctrl-c received! Stop receiving...")
-		
-		# Wait for threads to complete
-		# Filter out threads which have been joined or are None
-		logger.logging.info('Before join() on threads: threads={}'.format(threading.enumerate()))
-		for t in threading.enumerate():
-			if t.name.startswith('worker'):
-				t.join()
-		logger.logging.info('After join() on threads: threads={}'.format(threading.enumerate()))
-
-		logger.logging.info('Close acknowledger thread: {}'.format(a))
-		a.stopEvent.set()
-		a.join()
-
-		if nonPhpMessages:
-			logger.logging.info('Messages left by main' + str(len(nonPhpMessages)))
-			SQS_MANAGER.delete_messages(nonPhpMessages)   
-		
-	logger.logging.info('main() execution is now finished...')
+				if len(nonPhpMessages) == DELETE_BATCH_MAX:
+					logger.logger.logging.info('Will delete non php messages= ' + " ".join(str(x) for x in nonPhpMessages))
+					SQS_MANAGER.delete_messages(nonPhpMessages)   
+					nonPhpMessages = []     						
 
 @cli.command('info')
 def info():	
@@ -134,7 +117,7 @@ def info():
 
 	global MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX
 
-	logger.logging.info('Enviroment: {env} setup:{setup}'.format(env=env, setup=[{'concurent processes':MAX_PROCESSES, 
+	logger.logging.info('Enviroment setup:{setup}'.format(setup=[{'concurent processes':MAX_PROCESSES, 
 		'max messages to receive': MAX_Q_MESSAGES,
 		'queue name': QUEUE,
 		'queue endopoint url': QUEUE_ENDPOINT,
@@ -143,6 +126,27 @@ def info():
 		'aws profile name': PROFILE,
 		'aws region': REGION_NAME
 		}]))
+
+def signal_term_handler(nonPhpMessages):
+	logger.logging.info('Before join() on threads: threads={}'.format(threading.enumerate()))
+
+	for t in threading.enumerate():
+		if t.name.startswith('worker'):
+			logger.logging.info('Close worker thread: {}'.format(t))  
+			t.join()
+
+	if nonPhpMessages:
+		logger.logging.info('Messages left by main' + str(len(nonPhpMessages)))
+		SQS_MANAGER.delete_messages(nonPhpMessages)  
+
+	for a in threading.enumerate():
+		if a.name.startswith('acknowledger'):
+			logger.logging.info('Close acknowledger thread: {}'.format(a))  
+			a.stopEvent.set()
+			a.join()
+
+	logger.logging.info('Done, After join() on threads: threads={}'.format(threading.enumerate()))
+	exit()
 
 if __name__ == '__main__':
 	cli()
