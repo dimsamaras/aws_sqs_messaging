@@ -2,7 +2,6 @@ import boto3
 import time
 import random
 import click
-import config
 import json
 from sqsrunner.sqs import SqsManager
 import sqsrunner.logger as logger

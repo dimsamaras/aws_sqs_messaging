@@ -15,9 +15,9 @@ import signal
 import sqsrunner.logger as logger
 from sqsrunner.sqs import SqsManager
 from sqsrunner.cloudwatch import CloudwatchManager
-from sqsrunner.worker.worker import workerThread
-from sqsrunner.acknowledger.acknowledger import ackThread
-from sqsrunner.worker.gracefulkiller import GracefulKiller
+from sqsrunner.worker import workerThread
+from sqsrunner.acknowledger import ackThread
+from sqsrunner.gracefulkiller import GracefulKiller
 
 
 # global variables
@@ -34,10 +34,10 @@ CW_BATCH_MAX = None
 DELAY_MAX = None
 
 @click.group()
-@click.option('--config', required=True,  type=click.Path(exists=True), help="The configu file")
+@click.option('--config', required=True,  type=click.Path(exists=True), help="The configuration file")
 @click.option('--env', required=True, help="Use an enviroment profile for the worker to run, e.g DEV, for the DEV object to be used")
 def cli(config, env):
-	"""Worker consumes sqs messages"""
+	"""Worker consumes sqs messages."""
 
 	global  SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX
 
@@ -70,7 +70,7 @@ def cli(config, env):
 
 @cli.command('work')
 def work():
-	"""Worker execution logic"""
+	"""Worker executed. Consumes sqs messages, acknowledges and produces metric data."""
 	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX
 
 	sighandler = GracefulKiller()
@@ -113,7 +113,7 @@ def work():
 
 @cli.command('info')
 def info():	
-	"""Worker congi enviroment info"""
+	"""Worker configured enviroment info."""
 
 	global MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX
 
