@@ -12,9 +12,9 @@
 		"PRODUCTION": {
 			"instructions": "use when running for aws queue",
 			"queue_name": "demo_queue",
-			"queue_url": "https://sqs.us-west-1.amazonaws.com/592095516296/demo_queue",
-			"profile_name": "schoox2",
-			"region_name": "us-west-1",
+			"queue_url": "https://sqs.us-west-1.amazonaws.com/<account_data>/demo_queue",
+			"profile_name": "<profile>",
+			"region_name": "<profile_region>",
 			"endpoint_url": "",
 			"max_processes": 4
 		}
