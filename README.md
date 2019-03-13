@@ -12,6 +12,7 @@ python modules using boto3 and click libraries as dependencies.
 	--config option accepts a file path with the configuration .json. Follow the config.json.example
 	--env option accepts the enviroment object	
 	
+	* boto3 consumes either profile and credential definitions from aws configuration OR can assume role
 ## MESSAGE BROKERS
 * messageBroker.py _sqs message broker using the resource_
 
