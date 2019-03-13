@@ -18,7 +18,7 @@ from sqsrunner.cloudwatch import CloudwatchManager
 from sqsrunner.worker import workerThread
 from sqsrunner.acknowledger import ackThread
 from sqsrunner.gracefulkiller import GracefulKiller
-
+from sqsrunner.assumerole import RoleManager
 
 # global variables
 SQS_MANAGER = None
@@ -61,7 +61,14 @@ def cli(config, env):
 	if REGION_NAME:
 		session_cfg['region_name']  = REGION_NAME
 	if QUEUE_ENDPOINT:
-		sqs_cfg['endpoint_url']     = QUEUE_ENDPOINT  
+		sqs_cfg['endpoint_url']     = QUEUE_ENDPOINT 
+
+	if not session_cfg:
+		roleManager = RoleManager()
+		tempCredentials = roleManager.get_credentials()
+		session_cfg['aws_access_key_id'] = tempCredentials['AccessKeyId']
+		session_cfg['aws_secret_access_key'] = tempCredentials['SecretAccessKey']
+		session_cfg['aws_session_token'] = tempCredentials['SessionToken']
 
 	session             = boto3.Session(**session_cfg)
 	SQS_MANAGER 		= SqsManager(session, sqs_cfg)

@@ -1,5 +1,9 @@
 # https://medium.com/@benmorel/creating-a-linux-service-with-systemd-611b5c8b91d6
 
+# https://singlebrook.com/2017/10/23/auto-restart-crashed-service-systemd/
+
+# https://fedoramagazine.org/systemd-template-unit-files/
+
 [Unit]
 Description=SQS runner service
 After=network.target
