@@ -25,7 +25,7 @@ python modules using boto3 and click libraries as dependencies.
 			"queue_name": "<The queue name>",
 			"profile_name": "<profile, If empty it will try to assume role for instance>",
 			"region_name": "<profile_region, If empty it will try to assume role for instance>",
-			"endpoint_url": "<The endopoint url>",
+			"endpoint_url": "<The endopoint url, If empty it will be consumed from profile>",
 			"max_processes": Int, Conqurent processes
 	```
 

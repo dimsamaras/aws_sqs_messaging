@@ -15,8 +15,8 @@
 			"executor":"<php, php56 php72 /usr/local/bin/php, python>",
 			"working_dir":"<working directory path>",		
 			"queue_name": "demo_queue",
-			"profile_name": "<profile>",
-			"region_name": "<profile_region>",
+			"profile_name": "",
+			"region_name": "",
 			"endpoint_url": "",
 			"max_processes": 4
 		}
@@ -25,7 +25,8 @@
 		"max_messages_received": 10,
 		"delete_batch_max": 10,
 		"delay_max": 20,
-		"cloudwatch_metric_limit": 100
+		"cloudwatch_metric_limit": 100,
+		"cloudwatch_metric_interval": 5
 	}
 	
 }
