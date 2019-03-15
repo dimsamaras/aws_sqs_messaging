@@ -74,7 +74,7 @@ def work():
     #     print(response.get('MD5OfMessageBody'))
 
     messages = []
-    for i in range(0, 100):
+    for i in range(0, 3):
         body = (
             "/var/www/devscripts/dimsamQueueTest.php "
             + str(random.randint(0, 10))

@@ -28,11 +28,14 @@ def ack_messages(thread):
 	delete_batch = []
 	metrics = reset_metrics_dict()
 	timer = datetime.now()
+	timeAck = datetime.now()
+	ackTimeout = int(thread.SqsManager.get_queue_visibility_timeout()) - 30
 	while not thread.stopEvent.isSet():
 		if not thread.ackQueue.empty():
 			delete_batch.append(thread.ackQueue.get_nowait())
 			thread.ackQueue.task_done()
 		event_is_set = thread.stopEvent.wait(0.3)
+
 		if event_is_set:
 			# logger.logging.info('stop received, messages in queue {messages} '.format(messages=thread.ackQueue.qsize()))
 			while not thread.ackQueue.empty() or (len(delete_batch) > thread.delete_batch_max) :
@@ -47,10 +50,11 @@ def ack_messages(thread):
 			logger.logging.info('Will delete on stop final remaining = ' + " ".join(str(x) for x in delete_batch))
 			delete_batch, metrics, timer = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max, True)
 			delete_batch = send_ack(thread.SqsManager, delete_batch)
-		elif len(delete_batch) == thread.delete_batch_max:
+		elif (len(delete_batch) == thread.delete_batch_max) or (len(delete_batch)>0 and (datetime.now() - timeAck) > timedelta(seconds=ackTimeout)) :
 			logger.logging.info('Batch delete = ' + " ".join(str(x) for x in delete_batch))
 			delete_batch, metrics, timer  = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max)
 			delete_batch = send_ack(thread.SqsManager, delete_batch)
+			timeAck = datetime.now()
 
 def send_ack(SqsManager, messages):
 	"""Send message acknowledgement  in batches."""

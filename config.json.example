@@ -1,18 +1,19 @@
 {
 	"env": {
 		"DEV": {
-			"instructions": "use when running on localstack from within the container",
+			"description": "use when running on localstack from within the container",
+			"executor":"php",			
 			"queue_name": "local_queue",
-			"queue_url": " http://localhost:4576/queue/local_queue",
 			"profile_name": "",
 			"region_name": "",
 			"endpoint_url": "http://localstack:4576",
 			"max_processes": 10
 		},
 		"PRODUCTION": {
-			"instructions": "use when running for aws queue",
+			"description": "use when running for aws queue",
+			"executor":"<php, php56 php72 /usr/local/bin/php, python>",
+			"file_ending":"<.php, .py>",
 			"queue_name": "demo_queue",
-			"queue_url": "https://sqs.us-west-1.amazonaws.com/<account_data>/demo_queue",
 			"profile_name": "<profile>",
 			"region_name": "<profile_region>",
 			"endpoint_url": "",

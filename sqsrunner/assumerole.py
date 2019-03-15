@@ -14,7 +14,7 @@ class RoleManager:
 
 	def get_credentials(self):
 
-		if self.awsrole and self.awskey and self.awssecret:
+		if self.awsrole:
 			sts_client = boto3.client('sts')
 
 			assumed_role_object=sts_client.assume_role(

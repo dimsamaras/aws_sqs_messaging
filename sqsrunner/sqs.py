@@ -7,8 +7,11 @@ class SqsManager:
 
 	def __init__(self, session, sqs_cfg):
 		"""Create a SqsManager object."""
-		self.sqs 		= session.resource('sqs', **sqs_cfg)
 		self.session 	= session
+		try:
+			self.sqs 		= session.resource('sqs', **sqs_cfg)
+		except ClientError as e:
+			print("Unexpected error: %s" % e)
 		self.queue 		= ""
 		self.queueName 	= ""
 
@@ -25,8 +28,10 @@ class SqsManager:
 	def get_queue_name(self):
 		return self.queueName
 
-	def send_messages(self, message):
-		pass
-
 	def send_messages(self, messages):
 		return self.queue.send_messages(Entries=messages)
+
+	def get_queue_visibility_timeout(self):
+		attributes = self.queue.attributes
+		print attributes['VisibilityTimeout']
+		return attributes['VisibilityTimeout']
