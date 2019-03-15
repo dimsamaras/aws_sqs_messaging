@@ -2,7 +2,8 @@
 	"env": {
 		"DEV": {
 			"description": "use when running on localstack from within the container",
-			"executor":"php",			
+			"executor":"php",	
+			"working_dir":"",		
 			"queue_name": "local_queue",
 			"profile_name": "",
 			"region_name": "",
@@ -12,7 +13,7 @@
 		"PRODUCTION": {
 			"description": "use when running for aws queue",
 			"executor":"<php, php56 php72 /usr/local/bin/php, python>",
-			"file_ending":"<.php, .py>",
+			"working_dir":"<working directory path>",		
 			"queue_name": "demo_queue",
 			"profile_name": "<profile>",
 			"region_name": "<profile_region>",

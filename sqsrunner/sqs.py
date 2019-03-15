@@ -33,5 +33,4 @@ class SqsManager:
 
 	def get_queue_visibility_timeout(self):
 		attributes = self.queue.attributes
-		print attributes['VisibilityTimeout']
 		return attributes['VisibilityTimeout']

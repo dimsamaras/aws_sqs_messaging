@@ -7,18 +7,19 @@ import time
 
 class workerThread(threading.Thread):
 
-	def __init__(self, threadID, message, ackQueue, executor):
+	def __init__(self, threadID, message, ackQueue, executor, working_dir):
 		threading.Thread.__init__(self)
 		self.threadID       = threadID
 		self.message        = message
 		self.ackQueue       = ackQueue
 		self.executor		= executor
+		self.working_dir	= working_dir
 
 	def run(self):
 		process_message(self)
 
 def process_message(thread):
-	cmd = thread.executor + " " + thread.message.body
+	cmd = thread.executor + " " +  thread.working_dir + thread.message.body
 	timeStarted = time.time() 
 	process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 	stdout, stderr = process.communicate()

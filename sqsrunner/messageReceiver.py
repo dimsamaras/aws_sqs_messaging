@@ -33,7 +33,7 @@ DELETE_BATCH_MAX = None
 CW_BATCH_MAX = None
 DELAY_MAX = None
 EXECUTOR = None
-FILE_ENDING = None
+WORKING_DIR = None
 
 @click.group()
 @click.option('--config', required=True,  type=click.Path(exists=True), help="The configuration file")
@@ -41,7 +41,7 @@ FILE_ENDING = None
 def cli(config, env):
 	"""Worker consumes sqs messages."""
 
-	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, FILE_ENDING
+	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
 
 	with open(config) as f:
 		config = json.load(f)
@@ -56,7 +56,7 @@ def cli(config, env):
 	CW_BATCH_MAX		= config['worker']['cloudwatch_metric_limit']
 	DELAY_MAX           = config['worker']['delay_max']
 	EXECUTOR  			= config['env'][env]['executor']
-	FILE_ENDING  		= config['env'][env]['file_ending']
+	WORKING_DIR  		= config['env'][env]['working_dir']
 
 	session_cfg         = {}
 	sqs_cfg             = {}
@@ -82,7 +82,7 @@ def cli(config, env):
 @cli.command('work')
 def work():
 	"""Worker executed. Consumes sqs messages, acknowledges and produces metric data."""
-	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, DELETE_BATCH_MAX, CW_BATCH_MAX, DELAY_MAX, EXECUTOR, FILE_ENDING
+	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, DELETE_BATCH_MAX, CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
 
 	sighandler = GracefulKiller()
 	ackQueue = Queue(maxsize=0)
@@ -104,23 +104,14 @@ def work():
 
 		logger.logging.info('Received ' + str(len(messages)) + ' messages')
 		for message in messages:
-			args = shlex.split(message.body)
-			if args[0].endswith(FILE_ENDING): 
-				logger.logging.info('Running Threads ' + str(threading.active_count()))
-				while threading.active_count() >= MAX_PROCESSES + 1:
-					logger.logging.info('Delaying for threads to get free 3 secs')
-					time.sleep(3)
-				t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR)
-				t.daemon = True
-				t.setName('worker ' + message.receipt_handle)
-				t.start()
-			else:
-				nonExecutorMessages.append({'Id': message.message_id, 'ReceiptHandle': message.receipt_handle})
-
-				if len(nonExecutorMessages) == DELETE_BATCH_MAX:
-					logger.logger.logging.info('Will delete non processed messages= ' + " ".join(str(x) for x in nonExecutorMessages))
-					SQS_MANAGER.delete_messages(nonExecutorMessages)   
-					nonExecutorMessages = []     						
+			logger.logging.info('Running Threads ' + str(threading.active_count()))
+			while threading.active_count() >= MAX_PROCESSES + 1:
+				logger.logging.info('Delaying for threads to get free 3 secs')
+				time.sleep(3)
+			t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR, WORKING_DIR)
+			t.daemon = True
+			t.setName('worker ' + message.receipt_handle)
+			t.start()					
 
 @cli.command('info')
 def info():	
@@ -148,7 +139,7 @@ def signal_term_handler(nonExecutorMessages):
 			t.join()
 
 	if nonExecutorMessages:
-		logger.logging.info('Messages left by main' + str(len(nonExecutorMessages)))
+		logger.logging.info('Messages left unprocessed by main' + str(len(nonExecutorMessages)))
 		SQS_MANAGER.delete_messages(nonExecutorMessages)  
 
 	for a in threading.enumerate():

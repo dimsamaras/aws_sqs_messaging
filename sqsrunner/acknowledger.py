@@ -112,6 +112,7 @@ def calculate_metrics(metrics, messages, timer, CWManager, SqsManager, metrics_b
 	if (elapsed > timedelta(minutes=1)) and (metrics['count'] > 0):
 		send_metrics(CWManager, SqsManager, metrics)
 		metrics = reset_metrics_dict()
+		timer = datetime.now()
 
 	if force and (metrics['count']>0):
 		send_metrics(CWManager, SqsManager, metrics)
