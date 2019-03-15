@@ -5,8 +5,8 @@
 			"executor":"php",	
 			"working_dir":"",		
 			"queue_name": "local_queue",
-			"profile_name": "",
-			"region_name": "",
+			"profile_name": "default",
+			"region_name": "us-east-1",
 			"endpoint_url": "http://localstack:4576",
 			"max_processes": 10
 		},

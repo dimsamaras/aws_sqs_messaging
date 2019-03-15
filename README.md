@@ -13,6 +13,23 @@ python modules using boto3 and click libraries as dependencies.
 	--env option accepts the enviroment object	
 	
 	* boto3 consumes either profile and credential definitions from aws configuration OR can assume role
+
+## THE CONFIG 
+	1. copy config.json.example to config.json
+	2. Name your environments
+	3. Fill the blanks:
+	```
+			"description": "Environament description",
+			"executor":"<What processes are you going to consume : php, php56 php72 /usr/local/bin/php, python>",
+			"working_dir":"<The project working directory path, is the commands path is relative>",		
+			"queue_name": "<The queue name>",
+			"profile_name": "<profile, If empty it will try to assume role for instance>",
+			"region_name": "<profile_region, If empty it will try to assume role for instance>",
+			"endpoint_url": "<The endopoint url>",
+			"max_processes": Int, Conqurent processes
+	```
+
+	Use example for more 
 ## MESSAGE BROKERS
 * messageBroker.py _sqs message broker using the resource_
 

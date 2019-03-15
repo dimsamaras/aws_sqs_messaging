@@ -10,7 +10,7 @@ class RoleManager:
 		self.awsrole = os.environ['AWS_ASSUME_ROLE']
 		self.awskey  = os.environ['AWS_KEY_ID']
 		self.awssecret = os.environ['AWS_KEY_SECRET']
-		self.credentials = None
+		self.credentials = {}
 
 	def get_credentials(self):
 
@@ -22,20 +22,8 @@ class RoleManager:
 			    RoleSessionName="AssumeRoleSessionWorker"
 			)
 
-		self.credentials = assumed_role_object['Credentials']
+			self.credentials = assumed_role_object['Credentials']
 
-		return self.credentials
-
-	# # Use the temporary credentials that AssumeRole returns to make a 
-	# # connection to Amazon S3  
-	# s3_resource=boto3.resource(
-	#     's3',
-	#     aws_access_key_id=credentials['AccessKeyId'],
-	#     aws_secret_access_key=credentials['SecretAccessKey'],
-	#     aws_session_token=credentials['SessionToken'],
-	# )
-
-	# # Use the Amazon S3 resource object that is now configured with the 
-	# # credentials to access your S3 buckets. 
-	# for bucket in s3_resource.buckets.all():
-	#     print(bucket.name)
+			return self.credentials
+		else:
+			return {}	
