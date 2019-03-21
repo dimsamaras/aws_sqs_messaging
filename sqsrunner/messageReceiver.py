@@ -53,19 +53,19 @@ def cli(config, env):
 	PROFILE       		= config['env'][env]['profile_name']
 	REGION_NAME         = config['env'][env]['region_name']
 	DELETE_BATCH_MAX    = config['worker']['delete_batch_max']
-	CW_BATCH_MAX		= config['worker']['cloudwatch_metric_limit']
+	CW_BATCH_MAX		= config['worker']['cloudwatch_metric_interval']
 	DELAY_MAX           = config['worker']['delay_max']
 	EXECUTOR  			= config['env'][env]['executor']
 	WORKING_DIR  		= config['env'][env]['working_dir']
 
 	session_cfg         = {}
-	sqs_cfg             = {}
+	client_cfg             = {}
 	if PROFILE:
 		session_cfg['profile_name'] = PROFILE
 	if REGION_NAME:
 		session_cfg['region_name']  = REGION_NAME
 	if QUEUE_ENDPOINT:
-		sqs_cfg['endpoint_url']     = QUEUE_ENDPOINT 
+		client_cfg['endpoint_url']  = QUEUE_ENDPOINT 
 
 	if not session_cfg:
 		roleManager = RoleManager()
@@ -75,9 +75,9 @@ def cli(config, env):
 		session_cfg['aws_session_token'] = tempCredentials['SessionToken']
 
 	session             = boto3.Session(**session_cfg)
-	SQS_MANAGER 		= SqsManager(session, sqs_cfg)
+	SQS_MANAGER 		= SqsManager(session, client_cfg)
 	SQS_MANAGER.get_queue(QUEUE)
-	CW_MANAGER			= CloudwatchManager(session)
+	CW_MANAGER			= CloudwatchManager(session, client_cfg)
 
 @cli.command('work')
 def work():

@@ -5,11 +5,11 @@ import boto3
 
 class SqsManager:
 
-	def __init__(self, session, sqs_cfg):
+	def __init__(self, session, cfg):
 		"""Create a SqsManager object."""
 		self.session 	= session
 		try:
-			self.sqs 		= session.resource('sqs', **sqs_cfg)
+			self.sqs 		= session.resource('sqs', **cfg)
 		except ClientError as e:
 			print("Unexpected error: %s" % e)
 		self.queue 		= ""

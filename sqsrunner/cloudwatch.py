@@ -5,10 +5,10 @@ import boto3
 
 class CloudwatchManager:
 
-	def __init__(self, session):
+	def __init__(self, session, cfg):
 		"""Create a SqsManager object."""
 		try:
-			self.cw = session.client('cloudwatch')
+			self.cw = session.client('cloudwatch',**cfg)
 		except ClientError as e:
 			print("Unexpected error: %s" % e)
 		self.session = session
@@ -17,10 +17,14 @@ class CloudwatchManager:
 		cw_args 				= {}
 		cw_args['Namespace'] 	= namespace
 		cw_args['MetricData'] 	= metrics
+		print cw_args
+
 		try:
 			metrics = self.cw.put_metric_data(**cw_args)
 			print metrics
-		except ParamValidationError as e:
+		except self.cw.exceptions.InvalidParameterValueException as e:
 			print("Parameter validation error: %s" % e)
 		except TypeError as e:
 			print("Type error: %s" % e)
+		except:
+			print("Error during put metric data")
