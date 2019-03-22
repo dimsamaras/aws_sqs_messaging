@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 	name='schooxworker',
-	version='0.6',
+	version='0.7',
 	author='Dimitris Samaras',
 	author_email='',
 	description='This is tool to read and execute php commands served from sqs',
