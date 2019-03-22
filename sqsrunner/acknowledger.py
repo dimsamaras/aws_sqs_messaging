@@ -5,7 +5,7 @@ import logger
 from datetime import datetime, timedelta
 
 class ackThread(threading.Thread):
-
+	"""The acknowledger thread. Ack processed messages and send metrics."""
 	def __init__(self, threadID, SQS_MANAGER, CW_MANAGER, DELETE_BATCH_MAX, CW_BATCH_MAX, ackQueue, event):
 		threading.Thread.__init__(self)
 		self.threadID   		= threadID

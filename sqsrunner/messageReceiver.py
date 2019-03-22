@@ -3,6 +3,7 @@
 """
 Receive messages from sqs and process them parallely.
 """
+
 import shlex
 import boto3
 import time
@@ -82,6 +83,7 @@ def cli(config, env):
 @cli.command('work')
 def work():
 	"""Worker executed. Consumes sqs messages, acknowledges and produces metric data."""
+
 	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, DELETE_BATCH_MAX, CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
 
 	sighandler = GracefulKiller()
@@ -131,6 +133,7 @@ def info():
 		}]))
 
 def signal_term_handler(nonExecutorMessages):
+	"""On signal termination."""
 	logger.logging.info('Before join() on threads: threads={}'.format(threading.enumerate()))
 
 	for t in threading.enumerate():

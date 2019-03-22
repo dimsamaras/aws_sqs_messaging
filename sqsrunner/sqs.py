@@ -4,7 +4,8 @@ import boto3
 
 
 class SqsManager:
-
+	"""boto3 sqs implementation."""
+	
 	def __init__(self, session, cfg):
 		"""Create a SqsManager object."""
 		self.session 	= session

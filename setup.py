@@ -14,9 +14,9 @@ setup(
 		'boto3'
 	],
 
-	entry_points='''
+	entry_points="""
 		[console_scripts]
 		sqsrunner=sqsrunner.messageReceiver:cli
-	'''
+	"""
 	)
 

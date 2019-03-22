@@ -4,7 +4,7 @@ import boto3
 # https://docs.aws.amazon.com/code-samples/latest/catalog/python-sts-assume_role.py.html
 
 class RoleManager:
-	""" Assume role class """
+	"""Assume role class."""
 
 	def __init__(self):
 		self.awsrole = os.environ['AWS_ASSUME_ROLE']
@@ -13,7 +13,8 @@ class RoleManager:
 		self.credentials = {}
 
 	def get_credentials(self):
-
+		"""Get temporary credentials."""
+		
 		if self.awsrole:
 			sts_client = boto3.client('sts')
 

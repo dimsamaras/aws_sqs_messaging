@@ -21,7 +21,7 @@ class workerThread(threading.Thread):
 		process_message(self)
 
 def process_message(thread):
-	'''spawn ne wprocesses to execute commands'''
+	"""Spawn ne wprocesses to execute commands."""
 
 	if not thread.working_dir:
 		thread.working_dir = "."
@@ -45,7 +45,7 @@ def process_message(thread):
 	log(json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta}))	
 
 def log(dump):
-	'''log the command execution'''
+	"""Log the command execution."""
 
 	today 	 = str(date.today())
 	filename = '/var/log/'+today+'_worker.log'

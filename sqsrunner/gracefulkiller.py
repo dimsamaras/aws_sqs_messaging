@@ -3,6 +3,8 @@ import sqsrunner.logger as logger
 import threading
 
 class GracefulKillerSimple:
+  """Catch signals to allow graceful shutdown."""
+    
   receivedTermSignal = False
   def __init__(self):
     signal.signal(signal.SIGINT, self.exit_gracefully)

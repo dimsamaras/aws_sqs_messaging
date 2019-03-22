@@ -4,9 +4,11 @@ import boto3
 
 
 class CloudwatchManager:
+	"""boto3 Cloudatch implementation."""
 
 	def __init__(self, session, cfg):
-		"""Create a SqsManager object."""
+		"""Create a Cloudatch object."""
+		
 		try:
 			self.cw = session.client('cloudwatch',**cfg)
 		except ClientError as e:
@@ -14,6 +16,8 @@ class CloudwatchManager:
 		self.session = session
 
 	def put_metric_data(self, namespace, metrics):
+		"""Put metric data."""
+
 		cw_args 				= {}
 		cw_args['Namespace'] 	= namespace
 		cw_args['MetricData'] 	= metrics
