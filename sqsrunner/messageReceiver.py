@@ -156,3 +156,5 @@ def signal_term_handler(nonExecutorMessages):
 
 if __name__ == '__main__':
 	cli()
+else:
+	print __name__	

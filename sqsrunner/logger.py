@@ -1,4 +1,9 @@
 import logging
+from datetime import date
 
-logging.basicConfig(level=logging.INFO,
-					format='(%(threadName)-9s) %(message)s',)
+today 	 = str(date.today())
+filename = '/var/log/' + today + '_worker.log'
+
+logging.basicConfig(filename=filename,
+					level=logging.INFO,
+					format='(%(levelname)s: %(asctime)s %(threadName)-9s) %(message)s',)

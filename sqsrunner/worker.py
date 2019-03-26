@@ -35,14 +35,14 @@ def process_message(thread):
 	timeDelta = time.time() - timeStarted
 
 	if (stderr or stdout):
-		logger.logging.info('Processing error, {id}, {body}, with out: {out} and error: {error}'.format(body=thread.message.body, id=thread.message.message_id, out= stdout, error= stderr))
+		logger.logging.warning('Processing error, {id}, {body}, with out: {out} and error: {error}'.format(body=thread.message.body, id=thread.message.message_id, out= stdout, error= stderr))
 		# send this command to the dlq according to the redrive policy
 		# dead letter queues must be set manually 
 	else:   
 		logger.logging.info('Processing ok, {body}'.format(body=thread.message.body))
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle, 'ProcTime': timeDelta})
 
-	log(json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta}))	
+	logger.logging.info('Processed message: {body}'.format(body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
 
 def log(dump):
 	"""Log the command execution."""
