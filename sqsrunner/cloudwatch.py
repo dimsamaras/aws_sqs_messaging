@@ -7,7 +7,7 @@ class CloudwatchManager:
 	"""boto3 Cloudatch implementation."""
 
 	def __init__(self, session, cfg):
-		"""Create a Cloudatch object."""
+		"""Create a Cloudwatch object."""
 		
 		try:
 			self.cw = session.client('cloudwatch',**cfg)

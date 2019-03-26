@@ -14,6 +14,7 @@ import json
 import signal
 # custom dependencies
 import sqsrunner.logger as logger
+import sqsrunner.settings as settings
 from sqsrunner.sqs import SqsManager
 from sqsrunner.cloudwatch import CloudwatchManager
 from sqsrunner.worker import workerThread
@@ -47,6 +48,11 @@ def cli(config, env):
 	with open(config) as f:
 		config = json.load(f)
 
+	settings.init()
+	settings.settingsDict['env'] = config['env'][env]
+	settings.settingsDict['worker'] = config['worker']
+	settings.settingsDict['worker']['env'] = env
+
 	MAX_PROCESSES       = config['env'][env]['max_processes']
 	MAX_Q_MESSAGES      = config['worker']['max_messages_received']
 	QUEUE          		= config['env'][env]['queue_name']
@@ -60,7 +66,7 @@ def cli(config, env):
 	WORKING_DIR  		= config['env'][env]['working_dir']
 
 	session_cfg         = {}
-	client_cfg             = {}
+	client_cfg          = {}
 	if PROFILE:
 		session_cfg['profile_name'] = PROFILE
 	if REGION_NAME:
@@ -119,18 +125,20 @@ def work():
 def info():	
 	"""Worker configured enviroment info."""
 
-	global MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX, EXECUTOR
-
-	logger.logging.info('Enviroment setup:{setup}'.format(setup=[{'executor':EXECUTOR, 
-		'concurent processes':MAX_PROCESSES, 
-		'max messages to receive': MAX_Q_MESSAGES,
-		'queue name': QUEUE,
-		'queue endopoint url': QUEUE_ENDPOINT,
-		'queue delivery delay': DELAY_MAX,
-		'max messages to acknowledge': DELETE_BATCH_MAX,
-		'aws profile name': PROFILE,
-		'aws region': REGION_NAME
-		}]))
+	logger.logging.info('Enviroment setup:{setup}'.format(setup=[{
+		'executor':settings.settingsDict['env']['executor'], 
+		'working directory':settings.settingsDict['env']['working_dir'],
+		'concurent processes':settings.settingsDict['env']['max_processes'], 
+		'max messages to receive': settings.settingsDict['worker']['max_messages_received'],
+		'queue name': settings.settingsDict['env']['queue_name'],
+		'queue endopoint url': settings.settingsDict['env']['endpoint_url'],
+		'queue delivery delay': settings.settingsDict['worker']['delay_max'],
+		'max messages to acknowledge': settings.settingsDict['worker']['delete_batch_max'],
+		'max messages to acknowledge': settings.settingsDict['worker']['cloudwatch_metric_interval'],
+		'aws profile name': settings.settingsDict['env']['profile_name'],
+		'aws region': settings.settingsDict['env']['region_name']
+		}])
+	)
 
 def signal_term_handler(nonExecutorMessages):
 	"""On signal termination."""
@@ -155,4 +163,8 @@ def signal_term_handler(nonExecutorMessages):
 	exit()
 
 if __name__ == '__main__':
+	print 'here'
 	cli()
+
+else:
+	print __name__

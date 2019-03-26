@@ -42,7 +42,8 @@ def process_message(thread):
 		logger.logging.info('Processing ok, {body}'.format(body=thread.message.body))
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle, 'ProcTime': timeDelta})
 
-	log(json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta}))	
+	logger.logging.debug('Processed message: {body}'.format(body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
+	# log(json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta}))	
 
 def log(dump):
 	"""Log the command execution."""
