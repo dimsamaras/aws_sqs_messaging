@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import threading
-import logger
+import logging
 from datetime import datetime, timedelta
+
+logger = logging.getLogger('receiverLogger')
 
 class ackThread(threading.Thread):
 	"""The acknowledger thread. Ack processed messages and send metrics."""
@@ -18,9 +20,9 @@ class ackThread(threading.Thread):
 		self.stopEvent  		= event
 
 	def run(self):
-		logger.logging.info('Starting acknowledger: %s', self.name)
+		logger.info('Starting acknowledger: %s', self.name)
 		ack_messages(self)
-		logger.logging.info('Exiting acknowledger: %s', self.name)
+		logger.info('Exiting acknowledger: %s', self.name)
 			
 def ack_messages(thread):
 	"""Pull messages from intemediate queue and acknowledge them."""
@@ -37,21 +39,21 @@ def ack_messages(thread):
 		event_is_set = thread.stopEvent.wait(0.3)
 
 		if event_is_set:
-			# logger.logging.info('stop received, messages in queue {messages} '.format(messages=thread.ackQueue.qsize()))
+			# logger.info('stop received, messages in queue {messages} '.format(messages=thread.ackQueue.qsize()))
 			while not thread.ackQueue.empty() or (len(delete_batch) > thread.delete_batch_max) :
 				delete_batch.append(thread.ackQueue.get_nowait())
 				thread.ackQueue.task_done()
 
 				if len(delete_batch) == thread.delete_batch_max:
-					# logger.logging.info('Will delete on stop = ' + " ".join(str(x) for x in delete_batch))
+					# logger.info('Will delete on stop = ' + " ".join(str(x) for x in delete_batch))
 					delete_batch, metrics, timer = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max)
 					delete_batch = send_ack(thread.SqsManager, delete_batch)					
 
-			logger.logging.info('Will delete on stop final remaining = ' + " ".join(str(x) for x in delete_batch))
+			logger.info('Will delete on stop final remaining = ' + " ".join(str(x) for x in delete_batch))
 			delete_batch, metrics, timer = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max, True)
 			delete_batch = send_ack(thread.SqsManager, delete_batch)
 		elif (len(delete_batch) == thread.delete_batch_max) or (len(delete_batch)>0 and (datetime.now() - timeAck) > timedelta(seconds=ackTimeout)) :
-			logger.logging.info('Batch delete = ' + " ".join(str(x) for x in delete_batch))
+			logger.info('Batch delete = ' + " ".join(str(x) for x in delete_batch))
 			delete_batch, metrics, timer  = calculate_metrics(metrics, delete_batch, timer, thread.CWManager, thread.SqsManager, thread.metrics_batch_max)
 			delete_batch = send_ack(thread.SqsManager, delete_batch)
 			timeAck = datetime.now()
@@ -64,7 +66,7 @@ def send_ack(SqsManager, messages):
 	return []
 
 def send_metrics(CWManager, SqsManager, metrics):
-	logger.logging.info('Metrics to send = ' + str(metrics))
+	logger.info('Metrics to send = ' + str(metrics))
 
 	CWManager.put_metric_data('Schoox', [
 											{
@@ -107,7 +109,7 @@ def calculate_metrics(metrics, messages, timer, CWManager, SqsManager, metrics_b
 	
 	elapsed = datetime.now() - timer
 
-	logger.logging.info('Calculated metrics = ' + str(metrics))
+	logger.info('Calculated metrics = ' + str(metrics))
 
 	if (elapsed > timedelta(minutes=metrics_batch_max)) and (metrics['count'] > 0):
 		send_metrics(CWManager, SqsManager, metrics)

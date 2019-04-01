@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import boto3
+import logging
+
+logger = logging.getLogger('receiverLogger')
 
 
 class CloudwatchManager:
@@ -12,7 +15,8 @@ class CloudwatchManager:
 		try:
 			self.cw = session.client('cloudwatch',**cfg)
 		except ClientError as e:
-			print("Unexpected error: %s" % e)
+			logger.error("Unexpected error: %s" % e)
+			exit()
 		self.session = session
 
 	def put_metric_data(self, namespace, metrics):
@@ -27,8 +31,8 @@ class CloudwatchManager:
 			metrics = self.cw.put_metric_data(**cw_args)
 			print metrics
 		except self.cw.exceptions.InvalidParameterValueException as e:
-			print("Parameter validation error: %s" % e)
+			logger.error("Parameter validation error: %s" % e)
 		except TypeError as e:
-			print("Type error: %s" % e)
+			logger.error("Type error: %s" % e)
 		except:
-			print("Error during put metric data")
+			logger.error("Error during put metric data")
