@@ -26,7 +26,9 @@
 		"delete_batch_max": 10,
 		"delay_max": 20,
 		"cloudwatch_metric_limit": 100,
-		"cloudwatch_metric_interval": 5
+		"cloudwatch_metric_interval": 5,
+		"log_directory":"/var/log/",
+		"log_severity":"INFO"
 	}
 	
 }
