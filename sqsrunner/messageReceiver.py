@@ -16,7 +16,6 @@ import logging
 from datetime import date
 
 # custom dependencies
-import sqsrunner.settings as settings
 from sqsrunner.sqs import SqsManager
 from sqsrunner.cloudwatch import CloudwatchManager
 from sqsrunner.worker import workerThread
@@ -39,6 +38,7 @@ CW_BATCH_MAX = None
 DELAY_MAX = None
 EXECUTOR = None
 WORKING_DIR = None
+LOG_DIRECTORY = None
 
 @click.group()
 @click.option('--config', required=True,  type=click.Path(exists=True), help="The configuration file")
@@ -46,26 +46,10 @@ WORKING_DIR = None
 def cli(config, env):
 	"""Worker consumes sqs messages."""
 
-	global LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
+	global LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY
 
 	with open(config) as f:
 		config = json.load(f)
-
-	settings.init()
-	settings.settingsDict['env'] = config['env'][env]
-	settings.settingsDict['worker'] = config['worker']
-	settings.settingsDict['worker']['env'] = env
-
-	logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-	LOGGER = logging.getLogger('receiverLogger')
-
-	fileHandler = logging.FileHandler("{0}/{1}.log".format(settings.settingsDict['worker']['log_directory'], settings.settingsDict['worker']['env'] + '_' + str(date.today()) + '_worker'))
-	fileHandler.setFormatter(logFormatter)
-	LOGGER.addHandler(fileHandler)
-
-	# consoleHandler = logging.StreamHandler()
-	# consoleHandler.setFormatter(logFormatter)
-	# LOGGER.addHandler(consoleHandler)
 
 	MAX_PROCESSES       = config['env'][env]['max_processes']
 	MAX_Q_MESSAGES      = config['worker']['max_messages_received']
@@ -78,6 +62,18 @@ def cli(config, env):
 	DELAY_MAX           = config['worker']['delay_max']
 	EXECUTOR  			= config['env'][env]['executor']
 	WORKING_DIR  		= config['env'][env]['working_dir']
+	LOG_DIRECTORY  		= config['worker']['log_directory']
+
+	logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+	LOGGER = logging.getLogger('receiverLogger')
+
+	fileHandler = logging.FileHandler("{0}/{1}.log".format(LOG_DIRECTORY, env + '_' + str(date.today()) + '_worker'))
+	fileHandler.setFormatter(logFormatter)
+	LOGGER.addHandler(fileHandler)
+
+	# consoleHandler = logging.StreamHandler()
+	# consoleHandler.setFormatter(logFormatter)
+	# LOGGER.addHandler(consoleHandler)
 
 	session_cfg         = {}
 	client_cfg          = {}
@@ -138,20 +134,21 @@ def work():
 @cli.command('info')
 def info():	
 	"""Worker configured enviroment info."""
-	global LOGGER
+	global LOGGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, CW_BATCH_MAX
 
 	LOGGER.info('Enviroment setup:{setup}'.format(setup=[{
-		'executor':settings.settingsDict['env']['executor'], 
-		'working directory':settings.settingsDict['env']['working_dir'],
-		'concurent processes':settings.settingsDict['env']['max_processes'], 
-		'max messages to receive': settings.settingsDict['worker']['max_messages_received'],
-		'queue name': settings.settingsDict['env']['queue_name'],
-		'queue endopoint url': settings.settingsDict['env']['endpoint_url'],
-		'queue delivery delay': settings.settingsDict['worker']['delay_max'],
-		'max messages to acknowledge': settings.settingsDict['worker']['delete_batch_max'],
-		'interval to send metrics': settings.settingsDict['worker']['cloudwatch_metric_interval'],
-		'aws profile name': settings.settingsDict['env']['profile_name'],
-		'aws region': settings.settingsDict['env']['region_name']
+		'executor':EXECUTOR, 
+		'working directory':WORKING_DIR,
+		'concurent processes':MAX_PROCESSES, 
+		'max messages to receive': MAX_Q_MESSAGES,
+		'queue name': QUEUE,
+		'queue endopoint url': QUEUE_ENDPOINT,
+		'queue delivery delay': DELAY_MAX,
+		'max messages to acknowledge': DELETE_BATCH_MAX,
+		'interval to send metrics': CW_BATCH_MAX,
+		'aws profile name': PROFILE,
+		'aws region': REGION_NAME,
+		'logging directory': LOG_DIRECTORY
 		}])
 	)
 
