@@ -27,21 +27,20 @@ def process_message(thread):
 
 	if not thread.working_dir:
 		thread.working_dir = "."
-	cmd = thread.executor + " " + thread.message.body
+		
+	cmd 			= thread.executor + " " + thread.message.body
+	timeStarted 	= time.time() 
+	process 		= Popen(cmd, shell=True, cwd=thread.working_dir, stdout=PIPE, stderr=PIPE)
+	stdout, stderr 	= process.communicate()
+	rc 				= process.returncode
+	timeDelta 		= time.time() - timeStarted
 
-	timeStarted = time.time() 
-
-	process = Popen(cmd, shell=True, cwd=thread.working_dir, stdout=PIPE, stderr=PIPE)
-	stdout, stderr = process.communicate()
-
-	timeDelta = time.time() - timeStarted
-
-	if (stderr):
-		logger.info('Processing error, {id}, {body}, with out: {out} and error: {error}'.format(body=thread.message.body, id=thread.message.message_id, out= stdout, error= stderr))
+	if (stderr or rc > 0):
+		logger.info('Processing error with return code: {rc}, {id}, {body}, with out: {out} and error: {error}'.format(rc=rc, body=thread.message.body, id=thread.message.message_id, out= stdout, error= stderr))
 		# send this command to the dlq according to the redrive policy
 		# dead letter queues must be set manually 
 	else:   
-		logger.info('Processing ok, {body}'.format(body=thread.message.body))
+		logger.info('Processing ok with return code: {rc}, {body}'.format(rc=rc, body=thread.message.body))
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle, 'ProcTime': timeDelta})
 
 	logger.debug('Processed message: {body}'.format(body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
