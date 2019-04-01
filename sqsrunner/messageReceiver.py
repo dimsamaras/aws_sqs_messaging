@@ -137,7 +137,7 @@ def info():
 	global LOGGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, CW_BATCH_MAX
 
 	LOGGER.info('Enviroment setup:{setup}'.format(setup=[{
-		'executor':EXECUTOR, 
+		'executor':EXECUTOR,
 		'working directory':WORKING_DIR,
 		'concurent processes':MAX_PROCESSES, 
 		'max messages to receive': MAX_Q_MESSAGES,
@@ -160,7 +160,7 @@ def signal_term_handler(nonExecutorMessages):
 
 	for t in threading.enumerate():
 		if t.name.startswith('worker'):
-			LOGGER.info('Close worker thread: {}'.format(t))  
+			LOGGER.info('Close worker thread: {}'.format(t))
 			t.join()
 
 	if nonExecutorMessages:
@@ -169,7 +169,7 @@ def signal_term_handler(nonExecutorMessages):
 
 	for a in threading.enumerate():
 		if a.name.startswith('acknowledger'):
-			LOGGER.info('Close acknowledger thread: {}'.format(a))  
+			LOGGER.info('Close acknowledger thread: {}'.format(a))
 			a.stopEvent.set()
 			a.join()
 
@@ -178,6 +178,5 @@ def signal_term_handler(nonExecutorMessages):
 
 if __name__ == '__main__':
 	cli()
-
 else:
 	print __name__

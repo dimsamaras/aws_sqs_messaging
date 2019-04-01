@@ -27,9 +27,9 @@ def process_message(thread):
 
 	if not thread.working_dir:
 		thread.working_dir = "."
-		
+
 	cmd 			= thread.executor + " " + thread.message.body
-	timeStarted 	= time.time() 
+	timeStarted 	= time.time()
 	process 		= Popen(cmd, shell=True, cwd=thread.working_dir, stdout=PIPE, stderr=PIPE)
 	stdout, stderr 	= process.communicate()
 	rc 				= process.returncode
@@ -44,7 +44,7 @@ def process_message(thread):
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle, 'ProcTime': timeDelta})
 
 	logger.debug('Processed message: {body}'.format(body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
-	# log(json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta}))	
+	# log(json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta}))
 
 def log(dump):
 	"""Log the command execution."""
