@@ -1,5 +1,8 @@
 import os 
 import boto3
+import logging
+
+logger = logging.getLogger('receiverLogger')
 
 # https://docs.aws.amazon.com/code-samples/latest/catalog/python-sts-assume_role.py.html
 

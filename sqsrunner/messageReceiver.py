@@ -12,8 +12,10 @@ from Queue import Queue
 import click
 import json
 import signal
+import logging
+from datetime import date
+
 # custom dependencies
-import sqsrunner.logger as logger
 from sqsrunner.sqs import SqsManager
 from sqsrunner.cloudwatch import CloudwatchManager
 from sqsrunner.worker import workerThread
@@ -22,6 +24,7 @@ from sqsrunner.gracefulkiller import GracefulKiller
 from sqsrunner.assumerole import RoleManager
 
 # global variables
+LOGGER = None
 SQS_MANAGER = None
 CW_MANAGER = None
 MAX_PROCESSES = None
@@ -35,6 +38,7 @@ CW_BATCH_MAX = None
 DELAY_MAX = None
 EXECUTOR = None
 WORKING_DIR = None
+LOG_DIRECTORY = None
 
 @click.group()
 @click.option('--config', required=True,  type=click.Path(exists=True), help="The configuration file")
@@ -42,7 +46,7 @@ WORKING_DIR = None
 def cli(config, env):
 	"""Worker consumes sqs messages."""
 
-	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
+	global LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY
 
 	with open(config) as f:
 		config = json.load(f)
@@ -58,9 +62,21 @@ def cli(config, env):
 	DELAY_MAX           = config['worker']['delay_max']
 	EXECUTOR  			= config['env'][env]['executor']
 	WORKING_DIR  		= config['env'][env]['working_dir']
+	LOG_DIRECTORY  		= config['worker']['log_directory']
+
+	logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+	LOGGER = logging.getLogger('receiverLogger')
+
+	fileHandler = logging.FileHandler("{0}/{1}.log".format(LOG_DIRECTORY, env + '_' + str(date.today()) + '_worker'))
+	fileHandler.setFormatter(logFormatter)
+	LOGGER.addHandler(fileHandler)
+
+	# consoleHandler = logging.StreamHandler()
+	# consoleHandler.setFormatter(logFormatter)
+	# LOGGER.addHandler(consoleHandler)
 
 	session_cfg         = {}
-	client_cfg             = {}
+	client_cfg          = {}
 	if PROFILE:
 		session_cfg['profile_name'] = PROFILE
 	if REGION_NAME:
@@ -84,7 +100,7 @@ def cli(config, env):
 def work():
 	"""Worker executed. Consumes sqs messages, acknowledges and produces metric data."""
 
-	global SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, DELETE_BATCH_MAX, CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
+	global LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, DELETE_BATCH_MAX, CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
 
 	sighandler = GracefulKiller()
 	ackQueue = Queue(maxsize=0)
@@ -98,17 +114,17 @@ def work():
 
 	while True:
 		if sighandler.receivedTermSignal:
-			logger.logging.warning("Gracefully exiting due to receipt of signal {}".format(sighandler.lastSignal))
+			LOGGER.warning("Gracefully exiting due to receipt of signal {}".format(sighandler.lastSignal))
 			signal_term_handler(nonExecutorMessages)
 
 		start       = time.time()
 		messages    = SQS_MANAGER.receive_messages(MAX_Q_MESSAGES, DELAY_MAX)
 
-		logger.logging.info('Received ' + str(len(messages)) + ' messages')
+		LOGGER.info('Received ' + str(len(messages)) + ' messages')
 		for message in messages:
-			logger.logging.info('Running Threads ' + str(threading.active_count()))
+			LOGGER.info('Running Threads ' + str(threading.active_count()))
 			while threading.active_count() >= MAX_PROCESSES + 1:
-				logger.logging.info('Delaying for threads to get free 3 secs')
+				LOGGER.info('Delaying for threads to get free 3 secs')
 				time.sleep(3)
 			t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR, WORKING_DIR)
 			t.daemon = True
@@ -118,43 +134,49 @@ def work():
 @cli.command('info')
 def info():	
 	"""Worker configured enviroment info."""
+	global LOGGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, CW_BATCH_MAX
 
-	global MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX, EXECUTOR
-
-	logger.logging.info('Enviroment setup:{setup}'.format(setup=[{'executor':EXECUTOR, 
+	LOGGER.info('Enviroment setup:{setup}'.format(setup=[{
+		'executor':EXECUTOR,
+		'working directory':WORKING_DIR,
 		'concurent processes':MAX_PROCESSES, 
 		'max messages to receive': MAX_Q_MESSAGES,
 		'queue name': QUEUE,
 		'queue endopoint url': QUEUE_ENDPOINT,
 		'queue delivery delay': DELAY_MAX,
 		'max messages to acknowledge': DELETE_BATCH_MAX,
+		'interval to send metrics': CW_BATCH_MAX,
 		'aws profile name': PROFILE,
-		'aws region': REGION_NAME
-		}]))
+		'aws region': REGION_NAME,
+		'logging directory': LOG_DIRECTORY
+		}])
+	)
 
 def signal_term_handler(nonExecutorMessages):
 	"""On signal termination."""
-	logger.logging.info('Before join() on threads: threads={}'.format(threading.enumerate()))
+	global LOGGER
+
+	LOGGER.info('Before join() on threads: threads={}'.format(threading.enumerate()))
 
 	for t in threading.enumerate():
 		if t.name.startswith('worker'):
-			logger.logging.info('Close worker thread: {}'.format(t))  
+			LOGGER.info('Close worker thread: {}'.format(t))
 			t.join()
 
 	if nonExecutorMessages:
-		logger.logging.info('Messages left unprocessed by main' + str(len(nonExecutorMessages)))
+		LOGGER.info('Messages left unprocessed by main' + str(len(nonExecutorMessages)))
 		SQS_MANAGER.delete_messages(nonExecutorMessages)  
 
 	for a in threading.enumerate():
 		if a.name.startswith('acknowledger'):
-			logger.logging.info('Close acknowledger thread: {}'.format(a))  
+			LOGGER.info('Close acknowledger thread: {}'.format(a))
 			a.stopEvent.set()
 			a.join()
 
-	logger.logging.info('Done, After join() on threads: threads={}'.format(threading.enumerate()))
+	LOGGER.info('Done, After join() on threads: threads={}'.format(threading.enumerate()))
 	exit()
 
 if __name__ == '__main__':
 	cli()
 else:
-	print __name__	
+	print __name__

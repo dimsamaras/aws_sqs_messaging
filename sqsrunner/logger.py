@@ -1,9 +1,13 @@
 import logging
-from datetime import date
+# import sqsrunner.settings as settings
+# from datetime import date
 
-today 	 = str(date.today())
-filename = '/var/log/' + today + '_worker.log'
+logging.basicConfig(level=logging.INFO,
+					format='(%(threadName)-9s) %(message)s',)
 
-logging.basicConfig(filename=filename,
-					level=logging.INFO,
-					format='(%(levelname)s: %(asctime)s %(threadName)-9s) %(message)s',)
+# today 	 = str(date.today())
+# filename = '/var/log/' + settings.settingsDict['worker']['env'] + '_' + today + '_worker.log'
+
+# logging.basicConfig(filename=filename,
+# 					level=logging.DEBUG,
+# 					format='(%(levelname)s: %(asctime)s %(threadName)-9s) %(message)s',)
