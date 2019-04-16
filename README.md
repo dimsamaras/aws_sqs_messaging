@@ -19,17 +19,44 @@ python modules using boto3 and click libraries as dependencies.
 	2. Name your environments
 	3. Fill the blanks:
 	```
-			"description": "Environament description",
-			"executor":"<What processes are you going to consume : php, php56 php72 /usr/local/bin/php, python>",
-			"working_dir":"<The project working directory path, is the commands path is relative>",		
-			"queue_name": "<The queue name>",
-			"profile_name": "<profile, If empty it will try to assume role for instance>",
-			"region_name": "<profile_region, If empty it will try to assume role for instance>",
-			"endpoint_url": "<The endopoint url, If empty it will be consumed from profile>",
-			"max_processes": Int, Conqurent processes
+	"env": {
+		"DEV": {
+			"description": "use when running on development environment ie. from within the container",
+			"executor":"php",	
+			"working_dir":"",		
+			"queue_name": "local_queue",
+			"profile_name": "default",
+			"region_name": "us-east-1",
+			"endpoint_url": "http://localstack:4576",
+			"max_processes": 2
+		},
+		"PRODUCTION": {
+			"description": "use when running for aws queue",
+			"executor":"<php, php56 php72 /usr/local/bin/php, python>",
+			"working_dir":"<working directory path>",		
+			"queue_name": "demo_queue",
+			"profile_name": "",
+			"region_name": "",
+			"endpoint_url": "",
+			"max_processes": 10
+		}
+		},
+	"worker": {
+		"max_messages_received": 10,
+		"delete_batch_max": 10,
+		"delay_max": 20,
+		"cloudwatch_metric_limit": 100,
+		"cloudwatch_metric_interval": 5,
+		"log_directory":"/var/log/",
+		"log_level":<"DEBUG","INFO","WARNING","ERROR","CRITICAL">
+		"logging_rollover_when":<'S' Seconds,'M' Minutes,'H' Hours,'D' Days,'midnight'>,
+		"logging_rollover_interval": 5
+	}
 	```
 
-	Use example for more 
+	'env' object sets the consumer parameters, from where it will get the messages and how to execute them, also the parallelization of the execution
+	'worker' object sets the worker parameters, how many messages to receive woth everry call, how to acknoledge them and how to log everything.
+	
 ## MESSAGE BROKERS
 * messageBroker.py _sqs message broker using the resource_
 
