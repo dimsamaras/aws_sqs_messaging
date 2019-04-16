@@ -13,6 +13,7 @@ import click
 import json
 import signal
 import logging
+import logging.handlers
 from datetime import date
 
 # custom dependencies
@@ -25,6 +26,7 @@ from sqsrunner.assumerole import RoleManager
 
 # global variables
 LOGGER = None
+PROCESS_LOGGER = None
 SQS_MANAGER = None
 CW_MANAGER = None
 MAX_PROCESSES = None
@@ -39,6 +41,7 @@ DELAY_MAX = None
 EXECUTOR = None
 WORKING_DIR = None
 LOG_DIRECTORY = None
+LOG_LEVEL = 'DEBUG'
 
 @click.group()
 @click.option('--config', required=True,  type=click.Path(exists=True), help="The configuration file")
@@ -46,30 +49,39 @@ LOG_DIRECTORY = None
 def cli(config, env):
 	"""Worker consumes sqs messages."""
 
-	global LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY
+	global PROCESS_LOGGER, LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, LOG_LEVEL
 
 	with open(config) as f:
 		config = json.load(f)
 
-	MAX_PROCESSES       = config['env'][env]['max_processes']
-	MAX_Q_MESSAGES      = config['worker']['max_messages_received']
-	QUEUE          		= config['env'][env]['queue_name']
-	QUEUE_ENDPOINT      = config['env'][env]['endpoint_url']
-	PROFILE       		= config['env'][env]['profile_name']
-	REGION_NAME         = config['env'][env]['region_name']
-	DELETE_BATCH_MAX    = config['worker']['delete_batch_max']
-	CW_BATCH_MAX		= config['worker']['cloudwatch_metric_interval']
-	DELAY_MAX           = config['worker']['delay_max']
-	EXECUTOR  			= config['env'][env]['executor']
-	WORKING_DIR  		= config['env'][env]['working_dir']
-	LOG_DIRECTORY  		= config['worker']['log_directory']
+	MAX_PROCESSES       	= config['env'][env]['max_processes']
+	MAX_Q_MESSAGES      	= config['worker']['max_messages_received']
+	QUEUE          			= config['env'][env]['queue_name']
+	QUEUE_ENDPOINT      	= config['env'][env]['endpoint_url']
+	PROFILE       			= config['env'][env]['profile_name']
+	REGION_NAME         	= config['env'][env]['region_name']
+	DELETE_BATCH_MAX    	= config['worker']['delete_batch_max']
+	CW_BATCH_MAX			= config['worker']['cloudwatch_metric_interval']
+	DELAY_MAX           	= config['worker']['delay_max']
+	EXECUTOR  				= config['env'][env]['executor']
+	WORKING_DIR  			= config['env'][env]['working_dir']
+	LOG_DIRECTORY  			= config['worker']['log_directory']
+	LOG_LEVEL  				= config['worker']['log_level'].upper()
+	LOG_ROLLOVER_WHEN   	= config['worker']['logging_rollover_when']
+	LOG_ROLLOVER_INTERVAL 	= config['worker']['logging_rollover_interval']
 
 	logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-	LOGGER = logging.getLogger('receiverLogger')
 
-	fileHandler = logging.FileHandler("{0}/{1}.log".format(LOG_DIRECTORY, env + '_' + str(date.today()) + '_worker'))
+	LOGGER = logging.getLogger('receiverLogger')
+	fileHandler = logging.handlers.TimedRotatingFileHandler("{0}/{1}.log".format(LOG_DIRECTORY, env + '_worker'), LOG_ROLLOVER_WHEN, LOG_ROLLOVER_INTERVAL)
 	fileHandler.setFormatter(logFormatter)
+	fileHandler.setLevel(LOG_LEVEL)
 	LOGGER.addHandler(fileHandler)
+
+	PROCESS_LOGGER = logging.getLogger('processLogger')
+	fileHandler_p = logging.handlers.TimedRotatingFileHandler("{0}/{1}.log".format(LOG_DIRECTORY, env + '_worker_processed'), LOG_ROLLOVER_WHEN, LOG_ROLLOVER_INTERVAL)
+	fileHandler_p.setFormatter(logFormatter)
+	PROCESS_LOGGER.addHandler(fileHandler_p)
 
 	# consoleHandler = logging.StreamHandler()
 	# consoleHandler.setFormatter(logFormatter)
@@ -134,7 +146,7 @@ def work():
 @cli.command('info')
 def info():	
 	"""Worker configured enviroment info."""
-	global LOGGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, CW_BATCH_MAX
+	global LOGGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, LOG_LEVEL, CW_BATCH_MAX
 
 	LOGGER.info('Enviroment setup:{setup}'.format(setup=[{
 		'executor':EXECUTOR,
@@ -148,7 +160,8 @@ def info():
 		'interval to send metrics': CW_BATCH_MAX,
 		'aws profile name': PROFILE,
 		'aws region': REGION_NAME,
-		'logging directory': LOG_DIRECTORY
+		'logging directory': LOG_DIRECTORY,
+		'logging severity level': LOGGER.getEffectiveLevel()
 		}])
 	)
 

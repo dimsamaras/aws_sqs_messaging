@@ -4,7 +4,7 @@ import random
 import click
 import json
 from sqsrunner.sqs import SqsManager
-import sqsrunner.logger as logger
+import logging
 from sqsrunner.assumerole import RoleManager
 
 # global variables
@@ -118,7 +118,7 @@ def info():
 
 	global QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME
 
-	logger.logging.info('Enviroment setup:{setup}'.format(setup=[{
+	logging.info('Enviroment setup:{setup}'.format(setup=[{
 		'queue name': QUEUE,
 		'queue endopoint url': QUEUE_ENDPOINT,
 		'aws profile name': PROFILE,
@@ -126,4 +126,8 @@ def info():
 		}]))
 
 if __name__ == '__main__':
+
+	logging.basicConfig(level=logging.INFO,
+					format='(%(threadName)-9s) %(message)s',)
+
 	cli()

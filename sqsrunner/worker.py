@@ -8,6 +8,7 @@ from datetime import date
 import json
 
 logger = logging.getLogger('receiverLogger')
+process_logger = logging.getLogger('processLogger')
 
 class workerThread(threading.Thread):
 
@@ -35,7 +36,7 @@ def process_message(thread):
 	rc 				= process.returncode
 	timeDelta 		= time.time() - timeStarted
 
-	if (stderr or rc > 0):
+	if (stderr or rc != 0):
 		logger.info('Processing error with return code: {rc}, {id}, {body}, with out: {out} and error: {error}'.format(rc=rc, body=thread.message.body, id=thread.message.message_id, out= stdout, error= stderr))
 		# send this command to the dlq according to the redrive policy
 		# dead letter queues must be set manually 
@@ -43,14 +44,4 @@ def process_message(thread):
 		logger.info('Processing ok with return code: {rc}, {body}'.format(rc=rc, body=thread.message.body))
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle, 'ProcTime': timeDelta})
 
-	logger.debug('Processed message: {body}'.format(body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
-	# log(json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta}))
-
-def log(dump):
-	"""Log the command execution."""
-
-	today 	 = str(date.today())
-	filename = '/var/log/'+today+'_worker.log'
-
-	with open(filename, "a") as f:
-		f.write(dump + " \n")	
+	process_logger.info('Processed message with return code: {rc}, {body}'.format(rc=rc, body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
