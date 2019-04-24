@@ -30,7 +30,8 @@
 		"log_directory":"/var/log/",
 		"log_level":<"DEBUG","INFO","WARNING","ERROR","CRITICAL">
 		"logging_rollover_when":<'S' Seconds,'M' Minutes,'H' Hours,'D' Days,'midnight'>,
-		"logging_rollover_interval": 5
+		"logging_rollover_interval": 5,
+		"clear_duplicates":true
 	}
 	
 }

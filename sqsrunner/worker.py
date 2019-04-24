@@ -12,13 +12,23 @@ process_logger = logging.getLogger('processLogger')
 
 class workerThread(threading.Thread):
 
-	def __init__(self, threadID, message, ackQueue, executor, working_dir):
+	def __init__(self, threadID, message, ackQueue, executor, working_dir, cache):
+		"""
+		threadId = thread id, 
+		message = command for the worker to execute,
+		ackQueue = queue used for the acknowledgement of the messages,
+		executor = type of processes to work on,
+		working_dir = working directory,
+		cache = the messages are checked for duplicacy
+		"""
+
 		threading.Thread.__init__(self)
 		self.threadID       = threadID
 		self.message        = message
 		self.ackQueue       = ackQueue
 		self.executor		= executor
 		self.working_dir	= working_dir
+		self.clearCache     = cache
 
 	def run(self):
 		process_message(self)
@@ -45,3 +55,6 @@ def process_message(thread):
 		thread.ackQueue.put({'Id': thread.message.message_id, 'ReceiptHandle': thread.message.receipt_handle, 'ProcTime': timeDelta})
 
 	process_logger.info('Processed message with return code: {rc}, {body}'.format(rc=rc, body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
+
+	if thead.clearCache :
+		
