@@ -8,7 +8,11 @@
 			"profile_name": "default",
 			"region_name": "us-east-1",
 			"endpoint_url": "http://localstack:4576",
-			"max_processes": 10
+			"max_processes": 10,
+			"clear_duplicates":true,
+			"redis_host":"",
+			"redis_port":"",
+			"redis_password":""
 		},
 		"PRODUCTION": {
 			"description": "use when running for aws queue",
@@ -18,7 +22,11 @@
 			"profile_name": "",
 			"region_name": "",
 			"endpoint_url": "",
-			"max_processes": 4
+			"max_processes": 4,
+			"clear_duplicates":true,
+			"redis_host":"",
+			"redis_port":"",
+			"redis_password":""
 		}
 		},
 	"worker": {
@@ -30,8 +38,7 @@
 		"log_directory":"/var/log/",
 		"log_level":<"DEBUG","INFO","WARNING","ERROR","CRITICAL">
 		"logging_rollover_when":<'S' Seconds,'M' Minutes,'H' Hours,'D' Days,'midnight'>,
-		"logging_rollover_interval": 5,
-		"clear_duplicates":true
-	}
+		"logging_rollover_interval": 5
+		}
 	
 }
