@@ -6,13 +6,14 @@ from subprocess import Popen, PIPE
 import time
 from datetime import date
 import json
+import hashlib
 
 logger = logging.getLogger('receiverLogger')
 process_logger = logging.getLogger('processLogger')
 
 class workerThread(threading.Thread):
 
-	def __init__(self, threadID, message, ackQueue, executor, working_dir, cache):
+	def __init__(self, threadID, message, ackQueue, executor, working_dir, queue,cache):
 		"""
 		threadId = thread id, 
 		message = command for the worker to execute,
@@ -28,7 +29,8 @@ class workerThread(threading.Thread):
 		self.ackQueue       = ackQueue
 		self.executor		= executor
 		self.working_dir	= working_dir
-		self.clearCache     = cache
+		self.queue  		= queue
+		self.cache     		= cache
 
 	def run(self):
 		process_message(self)
@@ -56,5 +58,9 @@ def process_message(thread):
 
 	process_logger.info('Processed message with return code: {rc}, {body}'.format(rc=rc, body=json.dumps({'command':thread.message.body, 'executor':thread.executor, 'working_dir':thread.working_dir, 'output':stdout, 'error':stderr, 'execution_time':timeDelta})))
 
-	if thead.clearCache :
-		
+	if thread.cache :
+		command_digested = hashlib.md5(thread.message.body).hexdigest()	
+		# clear message to working set
+		thread.cache.srem(thread.queue + ":" + thread.queue + "_working", command_digested)
+		# remove command from queue
+		thread.cache.delete(thread.queue + ":" + command_digested)

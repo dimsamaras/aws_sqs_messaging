@@ -15,6 +15,7 @@ import signal
 import logging
 import logging.handlers
 from datetime import date
+import hashlib
 
 # custom dependencies
 from sqsrunner.sqs import SqsManager
@@ -23,6 +24,7 @@ from sqsrunner.worker import workerThread
 from sqsrunner.acknowledger import ackThread
 from sqsrunner.gracefulkiller import GracefulKiller
 from sqsrunner.assumerole import RoleManager
+from sqsrunner.redis import RedisMananger
 
 # global variables
 LOGGER = None
@@ -42,6 +44,7 @@ EXECUTOR = None
 WORKING_DIR = None
 LOG_DIRECTORY = None
 LOG_LEVEL = 'DEBUG'
+REDIS_MANAGER = None
 
 @click.group()
 @click.option('--config', required=True,  type=click.Path(exists=True), help="The configuration file")
@@ -49,7 +52,7 @@ LOG_LEVEL = 'DEBUG'
 def cli(config, env):
 	"""Worker consumes sqs messages."""
 
-	global PROCESS_LOGGER, LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, LOG_LEVEL
+	global REDIS_MANAGER, PROCESS_LOGGER, LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME, DELETE_BATCH_MAX,CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR, LOG_DIRECTORY, LOG_LEVEL
 
 	with open(config) as f:
 		config = json.load(f)
@@ -69,6 +72,7 @@ def cli(config, env):
 	LOG_LEVEL  				= config['worker']['log_level'].upper()
 	LOG_ROLLOVER_WHEN   	= config['worker']['logging_rollover_when']
 	LOG_ROLLOVER_INTERVAL 	= config['worker']['logging_rollover_interval']
+	DUPLICATES_CACHING 		= config['env'][env]['clear_duplicates']
 
 	logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 
@@ -108,11 +112,26 @@ def cli(config, env):
 	SQS_MANAGER.get_queue(QUEUE)
 	CW_MANAGER			= CloudwatchManager(session, client_cfg)
 
+	redis_cfg = {}
+	if DUPLICATES_CACHING:
+		if config['env'][env]['redis_host']:
+			redis_cfg['hostname'] = config['env'][env]['redis_host']
+		else:
+			redis_cfg['hostname'] = 127.0.0.1
+		if config['env'][env]['redis_port']:
+			redis_cfg['port'] = config['env'][env]['redis_port']
+		else:
+			redis_cfg['port'] = 6379	
+		if config['env'][env]['redis_password']:
+			redis_cfg['password'] = config['env'][env]['redis_password']
+
+		REDIS_MANAGER = RedisMananger(redis_cfg)		
+
 @cli.command('work')
 def work():
 	"""Worker executed. Consumes sqs messages, acknowledges and produces metric data."""
 
-	global LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, DELETE_BATCH_MAX, CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
+	global QUEUE, REDIS_MANAGER, LOGGER, SQS_MANAGER, CW_MANAGER, MAX_PROCESSES, MAX_Q_MESSAGES, DELETE_BATCH_MAX, CW_BATCH_MAX, DELAY_MAX, EXECUTOR, WORKING_DIR
 
 	sighandler = GracefulKiller()
 	ackQueue = Queue(maxsize=0)
@@ -138,7 +157,14 @@ def work():
 			while threading.active_count() >= MAX_PROCESSES + 1:
 				LOGGER.info('Delaying for threads to get free 3 secs')
 				time.sleep(3)
-			t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR, WORKING_DIR)
+
+			# add message to working set, remove from pending
+			if REDIS_MANAGER:
+				command_digested = hashlib.md5(message.body).hexdigest()	
+				REDIS_MANAGER.sadd(thread.queue + ":" + thread.queue + "_working", command_digested);
+				REDIS_MANAGER.srem(thread.queue + ":" + thread.queue, command_digested)
+				REDIS_MANAGER.hset(thread.queue + ":" . command_digested, 'time_arrived_to_worker', $timeMessageReceived);
+			t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR, WORKING_DIR, QUEUE, REDIS_MANAGER)
 			t.daemon = True
 			t.setName('worker ' + message.receipt_handle)
 			t.start()					
