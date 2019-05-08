@@ -11,7 +11,7 @@
 			"max_processes": 10,
 			"clear_duplicates":true,
 			"redis_host":"",
-			"redis_port":"",
+			"redis_port":6379,
 			"redis_password":""
 		},
 		"PRODUCTION": {
@@ -25,7 +25,7 @@
 			"max_processes": 4,
 			"clear_duplicates":true,
 			"redis_host":"",
-			"redis_port":"",
+			"redis_port":6379,
 			"redis_password":""
 		}
 		},

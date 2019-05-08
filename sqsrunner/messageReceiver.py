@@ -24,7 +24,8 @@ from sqsrunner.worker import workerThread
 from sqsrunner.acknowledger import ackThread
 from sqsrunner.gracefulkiller import GracefulKiller
 from sqsrunner.assumerole import RoleManager
-from sqsrunner.redis import RedisMananger
+from sqsrunner.redisManager import RedisManager
+
 
 # global variables
 LOGGER = None
@@ -115,9 +116,9 @@ def cli(config, env):
 	redis_cfg = {}
 	if DUPLICATES_CACHING:
 		if config['env'][env]['redis_host']:
-			redis_cfg['hostname'] = config['env'][env]['redis_host']
+			redis_cfg['host'] = config['env'][env]['redis_host']
 		else:
-			redis_cfg['hostname'] = 127.0.0.1
+			redis_cfg['host'] = '127.0.0.1'
 		if config['env'][env]['redis_port']:
 			redis_cfg['port'] = config['env'][env]['redis_port']
 		else:
@@ -125,7 +126,7 @@ def cli(config, env):
 		if config['env'][env]['redis_password']:
 			redis_cfg['password'] = config['env'][env]['redis_password']
 
-		REDIS_MANAGER = RedisMananger(redis_cfg)		
+		REDIS_MANAGER = RedisManager(redis_cfg)		
 
 @cli.command('work')
 def work():
@@ -163,7 +164,7 @@ def work():
 				command_digested = hashlib.md5(message.body).hexdigest()	
 				REDIS_MANAGER.sadd(thread.queue + ":" + thread.queue + "_working", command_digested);
 				REDIS_MANAGER.srem(thread.queue + ":" + thread.queue, command_digested)
-				REDIS_MANAGER.hset(thread.queue + ":" . command_digested, 'time_arrived_to_worker', $timeMessageReceived);
+				REDIS_MANAGER.hset(thread.queue + ":" . command_digested, 'time_arrived_to_worker', time.time());
 			t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR, WORKING_DIR, QUEUE, REDIS_MANAGER)
 			t.daemon = True
 			t.setName('worker ' + message.receipt_handle)

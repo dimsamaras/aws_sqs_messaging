@@ -1,3 +1,4 @@
+import logging
 import redis
 
 logger = logging.getLogger('receiverLogger')
