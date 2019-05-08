@@ -161,11 +161,12 @@ def work():
 
 			# add message to working set, remove from pending
 			if REDIS_MANAGER:
+				redis = REDIS_MANAGER.get_manager()
 				command_digested = hashlib.md5(message.body).hexdigest()	
-				REDIS_MANAGER.sadd(thread.queue + ":" + thread.queue + "_working", command_digested);
-				REDIS_MANAGER.srem(thread.queue + ":" + thread.queue, command_digested)
-				REDIS_MANAGER.hset(thread.queue + ":" . command_digested, 'time_arrived_to_worker', time.time());
-			t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR, WORKING_DIR, QUEUE, REDIS_MANAGER)
+				redis.sadd(QUEUE + ":" + QUEUE + "_working", command_digested);
+				redis.srem(QUEUE + ":" + QUEUE, command_digested)
+				redis.hset(QUEUE + ":" + command_digested, 'time_arrived_to_worker', time.time());
+			t = workerThread(message.receipt_handle, message, ackQueue, EXECUTOR, WORKING_DIR, QUEUE, redis)
 			t.daemon = True
 			t.setName('worker ' + message.receipt_handle)
 			t.start()					
