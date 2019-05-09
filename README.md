@@ -28,7 +28,11 @@ python modules using boto3 and click libraries as dependencies.
 			"profile_name": "default",
 			"region_name": "us-east-1",
 			"endpoint_url": "http://localstack:4576",
-			"max_processes": 2
+			"max_processes": 2,
+			"clear_duplicates":false,
+			"redis_host":<"redis","localhost","127.0.0.1">,
+			"redis_port":6379,
+			"redis_password":""
 		},
 		"PRODUCTION": {
 			"description": "use when running for aws queue",
@@ -38,7 +42,11 @@ python modules using boto3 and click libraries as dependencies.
 			"profile_name": "",
 			"region_name": "",
 			"endpoint_url": "",
-			"max_processes": 10
+			"max_processes": 10,
+			"clear_duplicates":true,
+			"redis_host":<"redis","localhost","127.0.0.1">,
+			"redis_port":6379,
+			"redis_password":""
 		}
 		},
 	"worker": {
