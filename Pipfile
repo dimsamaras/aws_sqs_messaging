@@ -9,6 +9,7 @@ verify_ssl = true
 boto3 = "*"
 click = "*"
 setuptools = "*"
+redis = "*"
 
 [requires]
 python_version = "2.7"

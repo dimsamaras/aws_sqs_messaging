@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 	name='schooxworker',
-	version='0.10',
+	version='0.10.2',
 	author='Dimitris Samaras',
 	author_email='',
 	description='This is tool to read and execute php commands served from sqs',
@@ -11,7 +11,8 @@ setup(
 	url='https://github.com/dimsamaras/aws_sqs_messaging',
 	install_requires=[
 		'click',
-		'boto3'
+		'boto3',
+		'redis'
 	],
 
 	entry_points="""
