@@ -6,6 +6,8 @@ import json
 from sqsrunner.sqs import SqsManager
 import logging
 from sqsrunner.assumerole import RoleManager
+import hashlib
+from sqsrunner.redisManager import RedisManager
 
 # global variables
 SQS_MANAGER = None
@@ -13,12 +15,15 @@ QUEUE = None
 QUEUE_ENDPOINT = None
 PROFILE = None
 REGION_NAME = None
+REDIS_MANAGER = None
 
 @click.group()
 @click.option('--config', required=True, type=click.Path(exists=True), help="The configuration file")
 @click.option('--env', required=True, help="Use an enviroment profile for the worker to run, e.g DEV, for the DEV object to be used")
 def cli(config, env):
-	global SQS_MANAGER, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME
+	"""Worker creates sqs messages."""
+
+	global REDIS_MANAGER, SQS_MANAGER, QUEUE, QUEUE_ENDPOINT, PROFILE, REGION_NAME
 
 	with open(config) as f:
 		config = json.load(f)
@@ -27,6 +32,7 @@ def cli(config, env):
 	QUEUE_ENDPOINT      = config['env'][env]['endpoint_url']
 	PROFILE             = config['env'][env]['profile_name']
 	REGION_NAME         = config['env'][env]['region_name']
+	DUPLICATES_CACHING 		= config['env'][env]['clear_duplicates']
 
 	session_cfg         = {}
 	sqs_cfg             = {}
@@ -48,11 +54,26 @@ def cli(config, env):
 	SQS_MANAGER         = SqsManager(session, sqs_cfg)
 	SQS_MANAGER.get_queue(QUEUE)
 
+	redis_cfg = {}
+	if DUPLICATES_CACHING:
+		if config['env'][env]['redis_host']:
+			redis_cfg['host'] = config['env'][env]['redis_host']
+		else:
+			redis_cfg['host'] = '127.0.0.1'
+		if config['env'][env]['redis_port']:
+			redis_cfg['port'] = config['env'][env]['redis_port']
+		else:
+			redis_cfg['port'] = 6379	
+		if config['env'][env]['redis_password']:
+			redis_cfg['password'] = config['env'][env]['redis_password']
+
+		REDIS_MANAGER = RedisManager(redis_cfg)	
 
 @cli.command('work')
 def work(): 
+	"""Worker executed. Create new messages."""
 
-	global SQS_MANAGER, QUEUE
+	global REDIS_MANAGER, SQS_MANAGER, QUEUE
 
 	start = time.time()
 
@@ -92,6 +113,16 @@ def work():
 		else:
 			messages.append({"Id": "randId_" + str(i), "MessageBody": body})
 
+		if REDIS_MANAGER:
+				redis = REDIS_MANAGER.get_manager()
+				document = {
+                        'message'           		: body,
+                        'time_inserted_to_queue'	: time.time()
+                    }
+				command_digested = hashlib.md5(body).hexdigest()	
+				redis.hmset(QUEUE + ":" + command_digested, document)
+				redis.sadd(QUEUE + ":" + QUEUE, command_digested);
+					
 		if len(messages) == 10:
 			response = SQS_MANAGER.send_messages(messages)
 			print(response)
