@@ -23,6 +23,11 @@ python -m sqsrunner.messageReceiver --config config.json --env DEV work
 	*note: boto3 consumes either profile and credential definitions from aws configuration OR can assume role
 
 ## THE CONFIG 
+
+'env' object sets the consumer parameters, from where it will get the messages and how to execute them, also the parallelization of the execution
+
+'worker' object sets the worker parameters, how many messages to receive woth everry call, how to acknoledge them and how to log everything.
+	
 ### 1. copy config.json.example to config.json
 ### 2. Name your environments
 ### 3. Fill the blanks and/or choose one form the options inide < >:
@@ -70,8 +75,6 @@ python -m sqsrunner.messageReceiver --config config.json --env DEV work
 }
 ```
 
-	'env' object sets the consumer parameters, from where it will get the messages and how to execute them, also the parallelization of the execution
-	'worker' object sets the worker parameters, how many messages to receive woth everry call, how to acknoledge them and how to log everything.
 	
 ## MESSAGE BROKERS
 * messageBroker.py _sqs message broker using the resource_
