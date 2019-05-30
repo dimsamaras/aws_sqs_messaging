@@ -3,12 +3,16 @@
 python modules using boto3 and click libraries as dependencies.
 
 # USAGE
-	1. Create messages:
+### 1. Create messages :
+```
+python -m sqsrunner.messageBroker --config config.json --env DEV work
+```
+### Default:
 ```
 python -m sqsrunner.messageBroker --config config.json --env DEV work
 ```
 
-	2. Receive messages:
+### 2. Receive messages:
 ```
 python -m sqsrunner.messageReceiver --config config.json --env DEV work
 ```
@@ -19,9 +23,9 @@ python -m sqsrunner.messageReceiver --config config.json --env DEV work
 	*note: boto3 consumes either profile and credential definitions from aws configuration OR can assume role
 
 ## THE CONFIG 
-	1. copy config.json.example to config.json
-	2. Name your environments
-	3. Fill the blanks and/or choose one form the options inide < >:
+### 1. copy config.json.example to config.json
+### 2. Name your environments
+### 3. Fill the blanks and/or choose one form the options inide < >:
 ```
 "env": {
 	"DEV": {
